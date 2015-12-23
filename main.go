@@ -22,6 +22,7 @@ package main
 import (
 	"flag"
 	"log"
+	"time"
 )
 
 func main() {
@@ -36,5 +37,69 @@ func main() {
 		log.Printf("INFO: Unable to open '%s', using default values", configFile)
 	}
 
-	log.Printf("Smoke Volume: %d", config.SmokeVolume)
+	// Prototype installation powerup. Need to poll heart rate monitor and enable as
+	// required and close when HR drops to 0.
+	d := make(chan bool)
+	go enableLightPulse(10, d)
+	go enableSmoke(config, d)
+	go enableFan(config, d)
+	go enablePump(config, d)
+
+	time.Sleep(time.Second * 2)
+	close(d)
+	time.Sleep(time.Second * 10)
+}
+
+func pollHeartRateMonitor(hr chan int) {
+	// Push Heart rate readings into the channel.
+}
+
+// enableLightPulse starts the light pulsing by the frequency defined by hr.  The light remains
+// pulsing till being notified to stop on d.
+func enableLightPulse(hr int, d chan bool) {
+	//tickChan := time.NewTicker(time.Millisecond * 400).C
+
+	log.Printf("INFO: Light Pulsing")
+	// Sharp fixed length, pulse of light with variable off gap depending on HR.
+}
+
+// enablePump switches the relay on for the water pump after DeltaTPump milliseconds have expired
+// in the configuration.  Pump remains on till being notified to stop on d.
+func enablePump(c Configuration, d chan bool) {
+	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTPump)).C
+
+	for {
+		select {
+		case <- dt:
+			log.Printf("INFO: Pump on")
+		case <- d:
+			log.Printf("INFO: Pump Off")
+			return
+		}
+	}
+}
+
+// enableFan switches the relay on for the fan after DeltaTFan milliseconds have expired
+// in the configuration.  Pump remains on till being notified to stop on d.
+func enableFan(c Configuration, d chan bool) {
+	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTFan)).C
+
+	for {
+		select {
+		case <- dt:
+			log.Printf("INFO: Fan On")
+		case <- d:
+			log.Printf("INFO: Fan Off")
+			return
+		}
+	}
+}
+
+
+// enableSmoke enages the DMX smoke machine by the SmokeVolume amount in the configuration.
+// Smoke Machine remains on till being notified to stop on d.
+func enableSmoke(c Configuration, d chan bool) {
+	log.Printf("INFO: Smoke on")
+	<- d
+	log.Printf("INFO: Smoke off")
 }
