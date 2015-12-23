@@ -20,34 +20,21 @@
 package main
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"testing"
+	"flag"
+	"log"
 )
 
-func TestConfiguration(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Configuration Suite")
+func main() {
+	log.Printf("INFO: Starting Weather-Machine")
+	var configFile string
+
+	flag.StringVar(&configFile, "configFile", "weather-machine.json", "The path to the configuration file")
+	flag.Parse()
+
+	config, err := loadConfiguration(configFile)
+	if err != nil {
+		log.Printf("INFO: Unable to open '%s', using default values", configFile)
+	}
+
+	log.Printf("Smoke Volume: %d", config.SmokeVolume)
 }
-
-var _ = Describe("Configuration", func() {
-	Context("loading", func() {
-		It("should throw an error for an invalid config file", func() {
-			c, err := loadConfiguration("foo")
-
-			Ω(err).ShouldNot(BeNil())
-			Ω(c.SmokeVolume).Should(Equal(20))
-			Ω(c.DeltaTFan).Should(Equal(10))
-			Ω(c.DeltaTPump).Should(Equal(20))
-		})
-
-		It("should be able to load a valid config file", func() {
-			c, err := loadConfiguration("testdata/test-config.json")
-
-			Ω(err).Should(BeNil())
-			Ω(c.SmokeVolume).Should(Equal(40))
-			Ω(c.DeltaTFan).Should(Equal(30))
-			Ω(c.DeltaTPump).Should(Equal(60))
-		})
-	})
-})
