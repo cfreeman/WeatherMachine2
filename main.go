@@ -40,12 +40,12 @@ func main() {
 	// Prototype installation powerup. Need to poll heart rate monitor and enable as
 	// required and close when HR drops to 0.
 	d := make(chan bool)
-	go enableLightPulse(10, d)
+	go enableLightPulse(60, d)
 	go enableSmoke(config, d)
 	go enableFan(config, d)
 	go enablePump(config, d)
 
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 10)
 	close(d)
 	time.Sleep(time.Second * 10)
 }
@@ -54,13 +54,31 @@ func pollHeartRateMonitor(hr chan int) {
 	// Push Heart rate readings into the channel.
 }
 
+func pulseLight() {
+	log.Printf("INFO: Light on")
+	time.Sleep(time.Millisecond * 500)
+	log.Printf("INFO: Light off")
+}
+
 // enableLightPulse starts the light pulsing by the frequency defined by hr.  The light remains
 // pulsing till being notified to stop on d.
 func enableLightPulse(hr int, d chan bool) {
-	//tickChan := time.NewTicker(time.Millisecond * 400).C
+	// Perform the first heart beat straight away.
+	pulseLight()
 
-	log.Printf("INFO: Light Pulsing")
+	dt := int(60000.0 / float32(hr))
+	ticker := time.NewTicker(time.Millisecond * time.Duration(dt)).C
+
 	// Sharp fixed length, pulse of light with variable off gap depending on HR.
+	for {
+		select {
+		case <-ticker:
+			pulseLight()
+		case <-d:
+			log.Printf("INFO: Light off")
+			return
+		}
+	}
 }
 
 // enablePump switches the relay on for the water pump after DeltaTPump milliseconds have expired
@@ -70,9 +88,9 @@ func enablePump(c Configuration, d chan bool) {
 
 	for {
 		select {
-		case <- dt:
+		case <-dt:
 			log.Printf("INFO: Pump on")
-		case <- d:
+		case <-d:
 			log.Printf("INFO: Pump Off")
 			return
 		}
@@ -86,20 +104,19 @@ func enableFan(c Configuration, d chan bool) {
 
 	for {
 		select {
-		case <- dt:
+		case <-dt:
 			log.Printf("INFO: Fan On")
-		case <- d:
+		case <-d:
 			log.Printf("INFO: Fan Off")
 			return
 		}
 	}
 }
 
-
 // enableSmoke enages the DMX smoke machine by the SmokeVolume amount in the configuration.
 // Smoke Machine remains on till being notified to stop on d.
 func enableSmoke(c Configuration, d chan bool) {
 	log.Printf("INFO: Smoke on")
-	<- d
+	<-d
 	log.Printf("INFO: Smoke off")
 }
