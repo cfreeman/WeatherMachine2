@@ -54,6 +54,7 @@ func pollHeartRateMonitor(hr chan int) {
 	// Push Heart rate readings into the channel.
 }
 
+// Pulse light pulses the light for a fixed duration.
 func pulseLight() {
 	log.Printf("INFO: Light on")
 	time.Sleep(time.Millisecond * 500)

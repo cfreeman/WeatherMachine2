@@ -13,14 +13,24 @@ This is the control software for [Nathen Street's](http://www.nathenstreet.com/)
 	$ go get github.com/onsi/gomega
 ```
 
+## Bluetooth stuff.
+```
+	$ sudo hciconfig hci0 up
+	$ hciconfig
+	$ sudo hcitool -i hci0 lecc 00:22:D0:97:C4:C0
+	$ /home/pi/bluez/bluez-5.37/attrib/gatttool -b 00:22:D0:97:C4:C0 -I
+	$ [00:22:D0:97:C4:C0][LE]> connect
+```
+
 
 ## TODO:
 * Setup and installation on Ubuntu OS Mate.
 * Stub out main loop for processing installation logic.
 	* Looks to see if we need to clean up the ticker.
 	* Mechanics for polling HRM and pushing that into logic for the installation.
-* Connect to BLE HRM.
-* Implement the BLE HRP protocol for detecting HR.
+	* Tidy up hrm.go Remove testing Main.
+* ~~Connect to BLE HRM.~~
+* ~~Implement the BLE HRP protocol for detecting HR.~~
 * Connect to DMX controller for outputting DMX values.
 * Craft DMX messages for controlling smoke machine.
 * Pi2 GPIO port control.
