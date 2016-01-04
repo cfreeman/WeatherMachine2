@@ -39,19 +39,24 @@ func main() {
 
 	// Prototype installation powerup. Need to poll heart rate monitor and enable as
 	// required and close when HR drops to 0.
-	d := make(chan bool)
-	go enableLightPulse(60, d)
-	go enableSmoke(config, d)
-	go enableFan(config, d)
-	go enablePump(config, d)
+	hd := make(chan bool)
+	hr := make(chan int)
 
-	time.Sleep(time.Second * 10)
-	close(d)
-	time.Sleep(time.Second * 10)
-}
+	go pollHeartRateMonitor(config.HRMMacAddress, hr, hd)
+	for {
+		heartRate := <- hr
+		log.Printf("HR: heartRate %d", heartRate)
+		if heartRate > 0 {
+			log.Printf("ENABLE INSTALLATION")
+		} else {
+			log.Printf("DISABLE INSTALLATION")
+		}
+	}
 
-func pollHeartRateMonitor(hr chan int) {
-	// Push Heart rate readings into the channel.
+	//go enableLightPulse(60, d)
+	//go enableSmoke(config, d)
+	//go enableFan(config, d)
+	//go enablePump(config, d)
 }
 
 // Pulse light pulses the light for a fixed duration.

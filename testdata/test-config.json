@@ -1,5 +1,6 @@
 {
 	"SmokeVolume":40,
 	"DeltaTFan":30,
-	"DeltaTPump":60
+	"DeltaTPump":60,
+	"HRMMacAddress":"FF:FF:FF:FF:FF:FF"
 }

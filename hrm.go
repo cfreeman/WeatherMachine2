@@ -23,7 +23,6 @@ import (
 	"encoding/binary"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/paypal/gatt"
 	"github.com/paypal/gatt/examples/option"
@@ -33,6 +32,7 @@ import (
 func onStateChanged(d gatt.Device, s gatt.State) {
 	switch s {
 	case gatt.StatePoweredOn:
+		log.Printf("Starting Scan")
 		d.Scan([]gatt.UUID{}, false)
 		return
 	default:
@@ -50,7 +50,8 @@ func onPeriphDiscovered(p gatt.Peripheral, a *gatt.Advertisement, rssi int, devi
 	p.Device().StopScanning()
 
 	log.Println()
-	log.Println("INFO: Peripheral ID =", p.ID())
+	log.Println("INFO:CONNECTING")
+	log.Println("INFO:  Peripheral ID =", p.ID())
 	log.Println("INFO:  Local Name        =", a.LocalName)
 	log.Println("INFO:  TX Power Level    =", a.TxPowerLevel)
 	log.Println("INFO:  Manufacturer Data =", a.ManufacturerData)
@@ -62,7 +63,7 @@ func onPeriphDiscovered(p gatt.Peripheral, a *gatt.Advertisement, rssi int, devi
 }
 
 // onPeriphConnected is called when we connect to a BLE peripheral.
-func onPeriphConnected(p gatt.Peripheral, hr chan int, err error) {
+func onPeriphConnected(p gatt.Peripheral, hr chan int, done chan bool, err error) {
 	log.Println("INFO: Connected to BLE Peripheral.")
 	defer p.Device().CancelConnection(p)
 
@@ -88,18 +89,17 @@ func onPeriphConnected(p gatt.Peripheral, hr chan int, err error) {
 		for _, c := range cs {
 			// Read the characteristic.
 			if (c.Properties() & gatt.CharRead) != 0 {
-				b, err := p.ReadCharacteristic(c)
+				_, err := p.ReadCharacteristic(c)
 				if err != nil {
 					log.Printf("ERROR: Failed to read characteristic - %s\n", err)
 					continue
 				}
-				log.Printf("    value         %x | %q\n", b, b)
 			}
 
 			// Discover the characteristic descriptors.
 			_, err := p.DiscoverDescriptors(nil, c)
 			if err != nil {
-				log.Printf("Failed to discover descriptors, err: %s\n", err)
+				log.Printf("ERROR: Failed to discover descriptors - %s\n", err)
 				continue
 			}
 
@@ -109,8 +109,6 @@ func onPeriphConnected(p gatt.Peripheral, hr chan int, err error) {
 				err := p.SetNotifyValue(c, func(c *gatt.Characteristic, b []byte, err error) {
 					heartRate := binary.LittleEndian.Uint16(append([]byte(b[1:2]), []byte{0}...))
 					hr <- int(heartRate)
-					log.Printf("Recieved: % X | %q\n", b, b)
-					log.Printf("**HeartRate: %d\n", heartRate)
 				})
 
 				if err != nil {
@@ -123,18 +121,21 @@ func onPeriphConnected(p gatt.Peripheral, hr chan int, err error) {
 		log.Println()
 	}
 
-	//fmt.Printf("Waiting for 5 seconds to get some notifiations, if any.\n")
-	time.Sleep(5 * time.Second)
+	// Wait here till we are done.
+	<-done
+	log.Printf("INFO: We are finished here.")
 }
 
 // onPeriphDisconnected is called when a BLE Peripheral is disconnected.
-func onPeriphDisconnected(p gatt.Peripheral, err error) {
+func onPeriphDisconnected(p gatt.Peripheral, done chan bool, err error) {
 	log.Println("INFO: Disconnected from BLE peripheral.")
+	done <- true
+	p.Device().Scan([]gatt.UUID{}, false)
 }
 
-// pollHRM connects to the BLE heart rate monitor at deviceID and collects heart rate
-// measurements on the channel hr.
-func pollHRM(deviceID string, hr chan int) {
+// pollHeartRateMonitor connects to the BLE heart rate monitor at deviceID and
+// collects heart rate measurements on the channel hr.
+func pollHeartRateMonitor(deviceID string, hr chan int, done chan bool) {
 	d, err := gatt.NewDevice(option.DefaultClientOptions...)
 	if err != nil {
 		log.Printf("ERROR: Unable to get bluetooth device.")
@@ -147,10 +148,13 @@ func pollHRM(deviceID string, hr chan int) {
 			onPeriphDiscovered(p, a, rssi, deviceID)
 		}),
 		gatt.PeripheralConnected(func(p gatt.Peripheral, err error) {
-			onPeriphConnected(p, hr, err)
+			onPeriphConnected(p, hr, done, err)
 		}),
-		gatt.PeripheralDisconnected(onPeriphDisconnected),
+		gatt.PeripheralDisconnected(func(p gatt.Peripheral, err error) {
+			onPeriphDisconnected(p, done, err)
+		}),
 	)
 
 	d.Init(onStateChanged)
+	log.Printf("heartRate finished")
 }

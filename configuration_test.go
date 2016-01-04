@@ -39,6 +39,7 @@ var _ = Describe("Configuration", func() {
 			Ω(c.SmokeVolume).Should(Equal(20))
 			Ω(c.DeltaTFan).Should(Equal(10))
 			Ω(c.DeltaTPump).Should(Equal(20))
+			Ω(c.HRMMacAddress).Should(Equal("00:22:D0:97:C4:C0"))
 		})
 
 		It("should be able to load a valid config file", func() {
@@ -48,6 +49,7 @@ var _ = Describe("Configuration", func() {
 			Ω(c.SmokeVolume).Should(Equal(40))
 			Ω(c.DeltaTFan).Should(Equal(30))
 			Ω(c.DeltaTPump).Should(Equal(60))
+			Ω(c.HRMMacAddress).Should(Equal("FF:FF:FF:FF:FF:FF"))
 		})
 	})
 })
