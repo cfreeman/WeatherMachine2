@@ -20,8 +20,11 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"log"
+	"os/exec"
+	"strconv"
 	"time"
 )
 
@@ -39,27 +42,67 @@ func main() {
 
 	// Prototype installation powerup. Need to poll heart rate monitor and enable as
 	// required and close when HR drops to 0.
-	hd := make(chan bool)
+	d := make(chan bool)
 	hr := make(chan int)
+	running := false
 
-	go pollHeartRateMonitor(config.HRMMacAddress, hr, hd)
+	go pollHeartRateMonitor(config.HRMMacAddress, hr)
 	for {
-		heartRate := <- hr
+		heartRate := <-hr
 		log.Printf("HR: heartRate %d", heartRate)
-		if heartRate > 0 {
+
+		if heartRate > 0 && !running {
 			log.Printf("ENABLE INSTALLATION")
-		} else {
+			go enableLightPulse(heartRate, d)
+			go enableSmoke(config, d)
+			go enableFan(config, d)
+			go enablePump(config, d)
+			running = true
+		} else if heartRate == 0 && running {
 			log.Printf("DISABLE INSTALLATION")
+			// Stop all four elements of the installation.
+			d <- true
+			d <- true
+			d <- true
+			d <- true
+			running = false
 		}
 	}
-
-	//go enableLightPulse(60, d)
-	//go enableSmoke(config, d)
-	//go enableFan(config, d)
-	//go enablePump(config, d)
 }
 
-// Pulse light pulses the light for a fixed duration.
+// pollHeartRateMonitor reads from the bluetooth heartrate monitor at the address specified
+// by deviceID. It puts heart rate reatings onto the hr channel.
+func pollHeartRateMonitor(deviceID string, hr chan int) {
+	for {
+		cmd := exec.Command("./WeatherMachine2-hrm", "--deviceID", deviceID)
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			log.Printf("ERROR: Unable to read from HRM.")
+			return
+		}
+
+		scanner := bufio.NewScanner(stdout)
+		go func() {
+			for scanner.Scan() {
+				i, err := strconv.Atoi(scanner.Text())
+				if err != nil {
+					log.Printf("ERROR: Unable to parse HR")
+				}
+
+				hr <- i
+			}
+		}()
+
+		if err := cmd.Start(); err != nil {
+			log.Printf("ERROR: Unable to start HRM.")
+			return
+		}
+
+		cmd.Wait()
+	}
+}
+
+// pulseLight pulses the light for a fixed duration.
 func pulseLight() {
 	log.Printf("INFO: Light on")
 	time.Sleep(time.Millisecond * 500)

@@ -25,9 +25,9 @@ import (
 )
 
 type Configuration struct {
-	SmokeVolume int // The amount of smoke for the machine to generate 0 - none, 127 - full blast.
-	DeltaTFan   int // The number of milliseconds to wait between turning the smoke machine on and engaging the fan.
-	DeltaTPump  int // The number of milliseconds to wait between turning the smoke machine on and engaging the rain pump.
+	SmokeVolume   int    // The amount of smoke for the machine to generate 0 - none, 127 - full blast.
+	DeltaTFan     int    // The number of milliseconds to wait between turning the smoke machine on and engaging the fan.
+	DeltaTPump    int    // The number of milliseconds to wait between turning the smoke machine on and engaging the rain pump.
 	HRMMacAddress string // The bluetooth peripheral ID for the heart rate monitor.
 }
 

@@ -25,10 +25,10 @@ This is the control software for [Nathen Street's](http://www.nathenstreet.com/)
 
 ## TODO:
 * Setup and installation on Ubuntu OS Mate.
-* Stub out main loop for processing installation logic.
-	* Looks to see if we need to clean up the ticker.
-	* Mechanics for polling HRM and pushing that into logic for the installation.
-	* Tidy up hrm.go Remove testing Main.
+* ~~Stub out main loop for processing installation logic.~~
+	* ~~Looks to see if we need to clean up the ticker.~~
+	* ~~Mechanics for polling HRM and pushing that into logic for the installation.~~
+	* ~~Tidy up hrm.go Remove testing Main.~~
 * ~~Connect to BLE HRM.~~
 * ~~Implement the BLE HRP protocol for detecting HR.~~
 * Connect to DMX controller for outputting DMX values.
