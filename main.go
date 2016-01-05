@@ -22,6 +22,7 @@ package main
 import (
 	"bufio"
 	"flag"
+	"github.com/kidoman/embd"
 	"log"
 	"os/exec"
 	"strconv"
@@ -40,6 +41,13 @@ func main() {
 		log.Printf("INFO: Unable to open '%s', using default values", configFile)
 	}
 
+	embd.InitGPIO()
+	defer embd.CloseGPIO()
+
+	embd.SetDirection(config.GPIOPinFan, embd.Out)
+	embd.SetDirection(config.GPIOPinPump, embd.Out)
+	embd.SetDirection(config.GPIOPinLight, embd.Out)
+
 	// Prototype installation powerup. Need to poll heart rate monitor and enable as
 	// required and close when HR drops to 0.
 	d := make(chan bool)
@@ -53,7 +61,7 @@ func main() {
 
 		if heartRate > 0 && !running {
 			log.Printf("ENABLE INSTALLATION")
-			go enableLightPulse(heartRate, d)
+			go enableLightPulse(config, heartRate, d)
 			go enableSmoke(config, d)
 			go enableFan(config, d)
 			go enablePump(config, d)
@@ -103,17 +111,19 @@ func pollHeartRateMonitor(deviceID string, hr chan int) {
 }
 
 // pulseLight pulses the light for a fixed duration.
-func pulseLight() {
+func pulseLight(c Configuration) {
 	log.Printf("INFO: Light on")
+	embd.DigitalWrite(c.GPIOPinLight, embd.High)
 	time.Sleep(time.Millisecond * 500)
+	embd.DigitalWrite(c.GPIOPinLight, embd.Low)
 	log.Printf("INFO: Light off")
 }
 
-// enableLightPulse starts the light pulsing by the frequency defined by hr.  The light remains
+// enableLightPulse starts the light pulsing by the frequency defined by hr. The light remains
 // pulsing till being notified to stop on d.
-func enableLightPulse(hr int, d chan bool) {
+func enableLightPulse(c Configuration, hr int, d chan bool) {
 	// Perform the first heart beat straight away.
-	pulseLight()
+	pulseLight(c)
 
 	dt := int(60000.0 / float32(hr))
 	ticker := time.NewTicker(time.Millisecond * time.Duration(dt)).C
@@ -122,9 +132,8 @@ func enableLightPulse(hr int, d chan bool) {
 	for {
 		select {
 		case <-ticker:
-			pulseLight()
+			pulseLight(c)
 		case <-d:
-			log.Printf("INFO: Light off")
 			return
 		}
 	}
@@ -139,8 +148,10 @@ func enablePump(c Configuration, d chan bool) {
 		select {
 		case <-dt:
 			log.Printf("INFO: Pump on")
+			embd.DigitalWrite(c.GPIOPinPump, embd.High)
 		case <-d:
 			log.Printf("INFO: Pump Off")
+			embd.DigitalWrite(c.GPIOPinPump, embd.Low)
 			return
 		}
 	}
@@ -155,8 +166,10 @@ func enableFan(c Configuration, d chan bool) {
 		select {
 		case <-dt:
 			log.Printf("INFO: Fan On")
+			embd.DigitalWrite(c.GPIOPinFan, embd.High)
 		case <-d:
 			log.Printf("INFO: Fan Off")
+			embd.DigitalWrite(c.GPIOPinFan, embd.Low)
 			return
 		}
 	}

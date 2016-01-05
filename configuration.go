@@ -29,12 +29,15 @@ type Configuration struct {
 	DeltaTFan     int    // The number of milliseconds to wait between turning the smoke machine on and engaging the fan.
 	DeltaTPump    int    // The number of milliseconds to wait between turning the smoke machine on and engaging the rain pump.
 	HRMMacAddress string // The bluetooth peripheral ID for the heart rate monitor.
+	GPIOPinFan    int    // The GPIO pin id to use for controlling the fan.
+	GPIOPinPump   int    // The GPIO pin id to use for controlling the pump.
+	GPIOPinLight  int    // The GPIO pin id to use for controlling the light.
 }
 
 // loadConfiguration reads a JSON file from the location specified at configFile and creates a configuration
 // struct from the contents. On error a default configuration object is returned.
 func loadConfiguration(configFile string) (c Configuration, err error) {
-	c = Configuration{20, 10, 20, "00:22:D0:97:C4:C0"} // Create default configuration.
+	c = Configuration{20, 10, 20, "00:22:D0:97:C4:C0", 16, 20, 21} // Create default configuration.
 
 	file, err := os.Open(configFile)
 	if err != nil {

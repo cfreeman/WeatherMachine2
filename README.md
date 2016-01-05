@@ -11,6 +11,8 @@ This is the control software for [Nathen Street's](http://www.nathenstreet.com/)
 	$ export GOPATH=`pwd`
 	$ go get github.com/onsi/ginkgo
 	$ go get github.com/onsi/gomega
+	$ go get github.com/kidoman/embd
+
 ```
 
 ## Bluetooth stuff.
@@ -33,7 +35,7 @@ This is the control software for [Nathen Street's](http://www.nathenstreet.com/)
 * ~~Implement the BLE HRP protocol for detecting HR.~~
 * Connect to DMX controller for outputting DMX values.
 * Craft DMX messages for controlling smoke machine.
-* Pi2 GPIO port control.
+* ~~Pi2 GPIO port control.~~
 
 
 ## License

@@ -2,5 +2,8 @@
 	"SmokeVolume":40,
 	"DeltaTFan":30,
 	"DeltaTPump":60,
-	"HRMMacAddress":"FF:FF:FF:FF:FF:FF"
+	"HRMMacAddress":"FF:FF:FF:FF:FF:FF",
+	"GPIOPinFan":1,
+	"GPIOPinPump":2,
+	"GPIOPinLight":3
 }
