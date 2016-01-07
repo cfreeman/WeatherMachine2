@@ -15,27 +15,32 @@ This is the control software for [Nathen Street's](http://www.nathenstreet.com/)
 
 ```
 
-## Bluetooth stuff.
+## Running notes
 ```
-	$ sudo hciconfig hci0 up
-	$ hciconfig
-	$ sudo hcitool -i hci0 lecc 00:22:D0:97:C4:C0
-	$ /home/pi/bluez/bluez-5.37/attrib/gatttool -b 00:22:D0:97:C4:C0 -I
-	$ [00:22:D0:97:C4:C0][LE]> connect
+	$ sudo su
+	$ hciconfig hci0 down
+	$ service bluetooth stop
+	$ ./WeatherMachine2
 ```
 
 
 ## TODO:
 * Setup and installation on Ubuntu OS Mate.
+* Installation details.
+* Tidy up a few odds and ends.
+* ~~Add delay between pulse and starting smoke.~~
+* Add in new state, light always on when we pair with the HRM. TO be finalised
+* ~~Smoke machine on duration, milliseconds.~~
 * ~~Stub out main loop for processing installation logic.~~
 	* ~~Looks to see if we need to clean up the ticker.~~
 	* ~~Mechanics for polling HRM and pushing that into logic for the installation.~~
 	* ~~Tidy up hrm.go Remove testing Main.~~
 * ~~Connect to BLE HRM.~~
 * ~~Implement the BLE HRP protocol for detecting HR.~~
-* Connect to DMX controller for outputting DMX values.
-* Craft DMX messages for controlling smoke machine.
+* ~~Connect to DMX controller for outputting DMX values.~~
+* ~~Craft DMX messages for controlling smoke machine.~~
 * ~~Pi2 GPIO port control.~~
+
 
 
 ## License

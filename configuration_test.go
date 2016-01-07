@@ -37,8 +37,9 @@ var _ = Describe("Configuration", func() {
 
 			Ω(err).ShouldNot(BeNil())
 			Ω(c.SmokeVolume).Should(Equal(20))
-			Ω(c.DeltaTFan).Should(Equal(10))
-			Ω(c.DeltaTPump).Should(Equal(20))
+			Ω(c.DeltaTSmoke).Should(Equal(10))
+			Ω(c.DeltaTFan).Should(Equal(20))
+			Ω(c.DeltaTPump).Should(Equal(30))
 			Ω(c.HRMMacAddress).Should(Equal("00:22:D0:97:C4:C0"))
 			Ω(c.GPIOPinFan).Should(Equal(16))
 			Ω(c.GPIOPinPump).Should(Equal(20))
@@ -50,6 +51,7 @@ var _ = Describe("Configuration", func() {
 
 			Ω(err).Should(BeNil())
 			Ω(c.SmokeVolume).Should(Equal(40))
+			Ω(c.DeltaTSmoke).Should(Equal(20))
 			Ω(c.DeltaTFan).Should(Equal(30))
 			Ω(c.DeltaTPump).Should(Equal(60))
 			Ω(c.HRMMacAddress).Should(Equal("FF:FF:FF:FF:FF:FF"))

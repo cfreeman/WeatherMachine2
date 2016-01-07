@@ -22,7 +22,9 @@ package main
 import (
 	"bufio"
 	"flag"
+	"github.com/akualab/dmx"
 	"github.com/kidoman/embd"
+	_ "github.com/kidoman/embd/host/all"
 	"log"
 	"os/exec"
 	"strconv"
@@ -48,6 +50,11 @@ func main() {
 	embd.SetDirection(config.GPIOPinPump, embd.Out)
 	embd.SetDirection(config.GPIOPinLight, embd.Out)
 
+	// Make sure all our GPIO pins are off.
+	embd.DigitalWrite(config.GPIOPinFan, embd.Low)
+	embd.DigitalWrite(config.GPIOPinPump, embd.Low)
+	embd.DigitalWrite(config.GPIOPinLight, embd.Low)
+
 	// Prototype installation powerup. Need to poll heart rate monitor and enable as
 	// required and close when HR drops to 0.
 	d := make(chan bool)
@@ -58,6 +65,11 @@ func main() {
 	for {
 		heartRate := <-hr
 		log.Printf("HR: heartRate %d", heartRate)
+
+		// If we have just paired with the HRM, someone has touched the paddles.
+		if heartRate == -1 {
+			embd.DigitalWrite(config.GPIOPinLight, embd.High)
+		}
 
 		if heartRate > 0 && !running {
 			log.Printf("ENABLE INSTALLATION")
@@ -178,7 +190,30 @@ func enableFan(c Configuration, d chan bool) {
 // enableSmoke enages the DMX smoke machine by the SmokeVolume amount in the configuration.
 // Smoke Machine remains on till being notified to stop on d.
 func enableSmoke(c Configuration, d chan bool) {
-	log.Printf("INFO: Smoke on")
-	<-d
-	log.Printf("INFO: Smoke off")
+	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTSmoke)).C
+	dmx, e := dmx.NewDMXConnection(c.SmokeAddress)
+	if e != nil {
+		log.Printf("Unable to connect to smoke machine.")
+	}
+	defer dmx.Close()
+
+	for {
+		select {
+		case <-dt:
+			log.Printf("INFO: Smoke on")
+			dmx.SetChannel(1, byte(c.SmokeVolume))
+			dmx.Render()
+			st := time.NewTimer(time.Millisecond * time.Duration(c.SmokeDuration)).C
+			<-st
+			log.Printf("INFO: Smoke off")
+			dmx.SetChannel(1, 0)
+			dmx.Render()
+
+		case <-d:
+			log.Printf("INFO: Smoke off")
+			dmx.SetChannel(1, 0)
+			dmx.Render()
+			return
+		}
+	}
 }
