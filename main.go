@@ -78,7 +78,7 @@ func main() {
 			embd.DigitalWrite(config.GPIOPinLight, embd.High)
 		}
 
-		if msg.HeartRate > 0 && !running {
+		if msg.Contact && msg.HeartRate > 0 && !running {
 			go enableLightPulse(config, msg.HeartRate, d)
 			go enableSmoke(config, d)
 			go enableFan(config, d)
