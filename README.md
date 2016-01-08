@@ -23,7 +23,6 @@ This is the control software for [Nathen Street's](http://www.nathenstreet.com/)
 	$ ./WeatherMachine2
 ```
 
-
 ## TODO:
 * Setup and installation on Ubuntu OS Mate.
 * Installation details.

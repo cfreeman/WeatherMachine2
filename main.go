@@ -28,8 +28,14 @@ import (
 	"log"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 )
+
+type HRMsg struct {
+	HeartRate int
+	Contact   bool
+}
 
 func main() {
 	log.Printf("INFO: Starting Weather-Machine")
@@ -58,28 +64,27 @@ func main() {
 	// Prototype installation powerup. Need to poll heart rate monitor and enable as
 	// required and close when HR drops to 0.
 	d := make(chan bool)
-	hr := make(chan int)
+	hrMsg := make(chan HRMsg)
 	running := false
 
-	go pollHeartRateMonitor(config.HRMMacAddress, hr)
+	go pollHeartRateMonitor(config.HRMMacAddress, hrMsg)
 	for {
-		heartRate := <-hr
-		log.Printf("HR: heartRate %d", heartRate)
+		msg := <-hrMsg
+		log.Printf("C: %t HR: %d", msg.Contact, msg.HeartRate)
 
-		// If we have just paired with the HRM, someone has touched the paddles.
-		if heartRate == -1 {
+		// When someone touches the installation. Give instant feedback.
+		if msg.Contact && !running {
+			log.Printf("INFO: Light on")
 			embd.DigitalWrite(config.GPIOPinLight, embd.High)
 		}
 
-		if heartRate > 0 && !running {
-			log.Printf("ENABLE INSTALLATION")
-			go enableLightPulse(config, heartRate, d)
+		if msg.HeartRate > 0 && !running {
+			go enableLightPulse(config, msg.HeartRate, d)
 			go enableSmoke(config, d)
 			go enableFan(config, d)
 			go enablePump(config, d)
 			running = true
-		} else if heartRate == 0 && running {
-			log.Printf("DISABLE INSTALLATION")
+		} else if !msg.Contact && running {
 			// Stop all four elements of the installation.
 			d <- true
 			d <- true
@@ -87,12 +92,18 @@ func main() {
 			d <- true
 			running = false
 		}
+
+		// When someone lets go of the installation. Give instant feedback.
+		if !msg.Contact && !running {
+			log.Printf("INFO: Light off")
+			embd.DigitalWrite(config.GPIOPinLight, embd.Low)
+		}
 	}
 }
 
 // pollHeartRateMonitor reads from the bluetooth heartrate monitor at the address specified
 // by deviceID. It puts heart rate reatings onto the hr channel.
-func pollHeartRateMonitor(deviceID string, hr chan int) {
+func pollHeartRateMonitor(deviceID string, hr chan HRMsg) {
 	for {
 		cmd := exec.Command("./WeatherMachine2-hrm", "--deviceID", deviceID)
 		stdout, err := cmd.StdoutPipe()
@@ -104,12 +115,18 @@ func pollHeartRateMonitor(deviceID string, hr chan int) {
 		scanner := bufio.NewScanner(stdout)
 		go func() {
 			for scanner.Scan() {
-				i, err := strconv.Atoi(scanner.Text())
+				msg := strings.Split(scanner.Text(), ",")
+				c, err := strconv.Atoi(msg[0])
+				if err != nil {
+					log.Printf("ERROR: Unable to parse contact")
+				}
+
+				i, err := strconv.Atoi(msg[1])
 				if err != nil {
 					log.Printf("ERROR: Unable to parse HR")
 				}
 
-				hr <- i
+				hr <- HRMsg{i, c == 1}
 			}
 		}()
 
@@ -193,7 +210,8 @@ func enableSmoke(c Configuration, d chan bool) {
 	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTSmoke)).C
 	dmx, e := dmx.NewDMXConnection(c.SmokeAddress)
 	if e != nil {
-		log.Printf("Unable to connect to smoke machine.")
+		log.Printf("ERROR: Unable to make DMX connection to smoke machine.")
+		return
 	}
 	defer dmx.Close()
 
