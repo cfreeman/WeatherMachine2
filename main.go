@@ -75,7 +75,7 @@ func main() {
 		// When someone touches the installation. Give instant feedback.
 		if msg.Contact && !running {
 			log.Printf("INFO: Light on")
-			embd.DigitalWrite(config.GPIOPinLight, embd.High)
+			embd.DigitalWrite(config.GPIOPinLight, embd.Low)
 		}
 
 		if msg.Contact && msg.HeartRate > 0 && !running {
@@ -96,7 +96,7 @@ func main() {
 		// When someone lets go of the installation. Give instant feedback.
 		if !msg.Contact && !running {
 			log.Printf("INFO: Light off")
-			embd.DigitalWrite(config.GPIOPinLight, embd.Low)
+			embd.DigitalWrite(config.GPIOPinLight, embd.High)
 		}
 	}
 }
@@ -142,9 +142,9 @@ func pollHeartRateMonitor(deviceID string, hr chan HRMsg) {
 // pulseLight pulses the light for a fixed duration.
 func pulseLight(c Configuration) {
 	log.Printf("INFO: Light on")
-	embd.DigitalWrite(c.GPIOPinLight, embd.High)
-	time.Sleep(time.Millisecond * 500)
 	embd.DigitalWrite(c.GPIOPinLight, embd.Low)
+	time.Sleep(time.Millisecond * 500)
+	embd.DigitalWrite(c.GPIOPinLight, embd.High)
 	log.Printf("INFO: Light off")
 }
 
@@ -177,10 +177,10 @@ func enablePump(c Configuration, d chan bool) {
 		select {
 		case <-dt:
 			log.Printf("INFO: Pump on")
-			embd.DigitalWrite(c.GPIOPinPump, embd.High)
+			embd.DigitalWrite(c.GPIOPinPump, embd.Low)
 		case <-d:
 			log.Printf("INFO: Pump Off")
-			embd.DigitalWrite(c.GPIOPinPump, embd.Low)
+			embd.DigitalWrite(c.GPIOPinPump, embd.High)
 			return
 		}
 	}
@@ -195,10 +195,13 @@ func enableFan(c Configuration, d chan bool) {
 		select {
 		case <-dt:
 			log.Printf("INFO: Fan On")
-			embd.DigitalWrite(c.GPIOPinFan, embd.High)
+			embd.DigitalWrite(c.GPIOPinFan, embd.Low)
 		case <-d:
 			log.Printf("INFO: Fan Off")
-			embd.DigitalWrite(c.GPIOPinFan, embd.Low)
+			// Wait for the fan duration to clear the smoke chamber.
+			ft := time.NewTimer(time.Millisecond * time.Duration(c.FanDuration)).C
+			<-ft
+			embd.DigitalWrite(c.GPIOPinFan, embd.High)
 			return
 		}
 	}

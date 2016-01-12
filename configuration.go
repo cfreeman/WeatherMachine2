@@ -35,12 +35,13 @@ type Configuration struct {
 	GPIOPinLight  int    // The GPIO pin id to use for controlling the light.
 	SmokeAddress  string // The serial address of the DMX controller for the smoke machine.
 	SmokeDuration int    // The number of milliseconds to activate the smoke machine.
+	FanDuration	  int	 // The number of milliseconds to leave the fan running.
 }
 
 // loadConfiguration reads a JSON file from the location specified at configFile and creates a configuration
 // struct from the contents. On error a default configuration object is returned.
 func loadConfiguration(configFile string) (c Configuration, err error) {
-	c = Configuration{63, 10, 20, 30, "00:22:D0:97:C4:C0", 16, 20, 21, "/dev/ttyUSB0", 500} // Create default configuration.
+	c = Configuration{63, 10, 20, 30, "00:22:D0:97:C4:C0", 16, 20, 21, "/dev/ttyUSB0", 500, 500} // Create default configuration.
 
 	file, err := os.Open(configFile)
 	if err != nil {
