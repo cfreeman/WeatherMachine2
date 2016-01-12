@@ -6,5 +6,25 @@
 	"HRMMacAddress":"FF:FF:FF:FF:FF:FF",
 	"GPIOPinFan":1,
 	"GPIOPinPump":2,
-	"GPIOPinLight":3
+	"GPIOPinLight":3,
+	"SmokeAddress":"foo",
+	"SmokeDuration":20,
+	"FanDuration":30,
+	"BeatRate":0.8,
+	"S1Beat":{
+		"Red":100,
+		"Green":15,
+		"Blue": 15,
+		"Amber": 15,
+		"Dimmer": 15
+	},
+	"S1Duration":200,
+	"S2Beat":{
+		"Red":100,
+		"Green":15,
+		"Blue":15,
+		"Amber":15,
+		"Dimmer":15
+	},
+	"S2Duration":100
 }

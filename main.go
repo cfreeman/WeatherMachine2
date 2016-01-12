@@ -24,7 +24,7 @@ import (
 	"flag"
 	"github.com/akualab/dmx"
 	"github.com/kidoman/embd"
-	_ "github.com/kidoman/embd/host/all"
+	//_ "github.com/kidoman/embd/host/all"
 	"log"
 	"os/exec"
 	"strconv"
@@ -49,8 +49,17 @@ func main() {
 		log.Printf("INFO: Unable to open '%s', using default values", configFile)
 	}
 
+	// Connect to the GPIO ports.
 	embd.InitGPIO()
 	defer embd.CloseGPIO()
+
+	// Connect to the DMX controller.
+	dmx, e := dmx.NewDMXConnection(config.SmokeAddress)
+	if e != nil {
+		log.Printf("ERROR: Unable to make DMX connection to smoke machine.")
+		return
+	}
+	defer dmx.Close()
 
 	embd.SetDirection(config.GPIOPinFan, embd.Out)
 	embd.SetDirection(config.GPIOPinPump, embd.Out)
@@ -75,12 +84,13 @@ func main() {
 		// When someone touches the installation. Give instant feedback.
 		if msg.Contact && !running {
 			log.Printf("INFO: Light on")
-			embd.DigitalWrite(config.GPIOPinLight, embd.Low)
+			enableLight(config.S1Beat, dmx)
+			//embd.DigitalWrite(config.GPIOPinLight, embd.Low)
 		}
 
 		if msg.Contact && msg.HeartRate > 0 && !running {
-			go enableLightPulse(config, msg.HeartRate, d)
-			go enableSmoke(config, d)
+			go enableLightPulse(config, msg.HeartRate, d, dmx)
+			go enableSmoke(config, d, dmx)
 			go enableFan(config, d)
 			go enablePump(config, d)
 			running = true
@@ -96,7 +106,8 @@ func main() {
 		// When someone lets go of the installation. Give instant feedback.
 		if !msg.Contact && !running {
 			log.Printf("INFO: Light off")
-			embd.DigitalWrite(config.GPIOPinLight, embd.High)
+			disableLight(dmx)
+			//embd.DigitalWrite(config.GPIOPinLight, embd.High)
 		}
 	}
 }
@@ -139,29 +150,54 @@ func pollHeartRateMonitor(deviceID string, hr chan HRMsg) {
 	}
 }
 
+func enableLight(l LightColour, dmx *dmx.DMX) {
+	dmx.SetChannel(4, byte(l.Red))
+	dmx.SetChannel(5, byte(l.Green))
+	dmx.SetChannel(6, byte(l.Blue))
+	dmx.SetChannel(7, byte(l.Amber))
+	dmx.SetChannel(8, byte(l.Dimmer))
+	dmx.Render()
+}
+
+func disableLight(dmx *dmx.DMX) {
+	dmx.SetChannel(4, 0)
+	dmx.SetChannel(5, 0)
+	dmx.SetChannel(6, 0)
+	dmx.SetChannel(7, 0)
+	dmx.SetChannel(8, 0)
+	dmx.Render()
+}
+
 // pulseLight pulses the light for a fixed duration.
-func pulseLight(c Configuration) {
+func pulseLight(c Configuration, dmx *dmx.DMX) {
 	log.Printf("INFO: Light on")
-	embd.DigitalWrite(c.GPIOPinLight, embd.Low)
-	time.Sleep(time.Millisecond * 500)
-	embd.DigitalWrite(c.GPIOPinLight, embd.High)
+	enableLight(c.S1Beat, dmx)
+	time.Sleep(time.Millisecond * time.Duration(c.S1Duration))
+	disableLight(dmx)
+
+	enableLight(c.S2Beat, dmx)
+	time.Sleep(time.Millisecond * time.Duration(c.S2Duration))
+	disableLight(dmx)
+
+	//embd.DigitalWrite(c.GPIOPinLight, embd.Low)
+	//embd.DigitalWrite(c.GPIOPinLight, embd.High)
 	log.Printf("INFO: Light off")
 }
 
 // enableLightPulse starts the light pulsing by the frequency defined by hr. The light remains
 // pulsing till being notified to stop on d.
-func enableLightPulse(c Configuration, hr int, d chan bool) {
+func enableLightPulse(c Configuration, hr int, d chan bool, dmx *dmx.DMX) {
 	// Perform the first heart beat straight away.
-	pulseLight(c)
+	pulseLight(c, dmx)
 
-	dt := int(60000.0 / float32(hr))
+	dt := int((60000.0 / float32(hr)) * c.BeatRate)
 	ticker := time.NewTicker(time.Millisecond * time.Duration(dt)).C
 
 	// Sharp fixed length, pulse of light with variable off gap depending on HR.
 	for {
 		select {
 		case <-ticker:
-			pulseLight(c)
+			pulseLight(c, dmx)
 		case <-d:
 			return
 		}
@@ -209,14 +245,8 @@ func enableFan(c Configuration, d chan bool) {
 
 // enableSmoke enages the DMX smoke machine by the SmokeVolume amount in the configuration.
 // Smoke Machine remains on till being notified to stop on d.
-func enableSmoke(c Configuration, d chan bool) {
+func enableSmoke(c Configuration, d chan bool, dmx *dmx.DMX) {
 	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTSmoke)).C
-	dmx, e := dmx.NewDMXConnection(c.SmokeAddress)
-	if e != nil {
-		log.Printf("ERROR: Unable to make DMX connection to smoke machine.")
-		return
-	}
-	defer dmx.Close()
 
 	for {
 		select {

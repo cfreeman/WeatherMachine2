@@ -36,7 +36,7 @@ var _ = Describe("Configuration", func() {
 			c, err := loadConfiguration("foo")
 
 			Ω(err).ShouldNot(BeNil())
-			Ω(c.SmokeVolume).Should(Equal(20))
+			Ω(c.SmokeVolume).Should(Equal(63))
 			Ω(c.DeltaTSmoke).Should(Equal(10))
 			Ω(c.DeltaTFan).Should(Equal(20))
 			Ω(c.DeltaTPump).Should(Equal(30))
@@ -58,6 +58,8 @@ var _ = Describe("Configuration", func() {
 			Ω(c.GPIOPinFan).Should(Equal(1))
 			Ω(c.GPIOPinPump).Should(Equal(2))
 			Ω(c.GPIOPinLight).Should(Equal(3))
+			Ω(c.BeatRate).Should(BeNumerically("~", 0.8, 0.001))
+			Ω(c.S1Beat.Red).Should(Equal(100))
 		})
 	})
 })

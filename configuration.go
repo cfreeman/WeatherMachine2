@@ -24,24 +24,37 @@ import (
 	"os"
 )
 
+type LightColour struct {
+	Red    int // The intensity of the red channel. (1-255)
+	Green  int // The intensity of the green channel. (1-255)
+	Blue   int // The intensity of the blue channel. (1-255)
+	Amber  int // The intensity of the amber channel. (1-255)
+	Dimmer int // The intensity of the dimmer channel. (1-255)
+}
+
 type Configuration struct {
-	SmokeVolume   int    // The amount of smoke for the machine to generate 0 - none, 127 - full blast.
-	DeltaTSmoke   int    // The number of milliseconds to wait before turning the smoke machine on.
-	DeltaTFan     int    // The number of milliseconds to wait before engaging the fan.
-	DeltaTPump    int    // The number of milliseconds to wait before and engaging the rain pump.
-	HRMMacAddress string // The bluetooth peripheral ID for the heart rate monitor.
-	GPIOPinFan    int    // The GPIO pin id to use for controlling the fan.
-	GPIOPinPump   int    // The GPIO pin id to use for controlling the pump.
-	GPIOPinLight  int    // The GPIO pin id to use for controlling the light.
-	SmokeAddress  string // The serial address of the DMX controller for the smoke machine.
-	SmokeDuration int    // The number of milliseconds to activate the smoke machine.
-	FanDuration	  int	 // The number of milliseconds to leave the fan running.
+	SmokeVolume   int         // The amount of smoke for the machine to generate 0 - none, 127 - full blast.
+	DeltaTSmoke   int         // The number of milliseconds to wait before turning the smoke machine on.
+	DeltaTFan     int         // The number of milliseconds to wait before engaging the fan.
+	DeltaTPump    int         // The number of milliseconds to wait before and engaging the rain pump.
+	HRMMacAddress string      // The bluetooth peripheral ID for the heart rate monitor.
+	GPIOPinFan    int         // The GPIO pin id to use for controlling the fan.
+	GPIOPinPump   int         // The GPIO pin id to use for controlling the pump.
+	GPIOPinLight  int         // The GPIO pin id to use for controlling the light.
+	SmokeAddress  string      // The serial address of the DMX controller for the smoke machine.
+	SmokeDuration int         // The number of milliseconds to activate the smoke machine.
+	FanDuration   int         // The number of milliseconds to leave the fan running.
+	BeatRate      float32     // Heartrate scale. 0.0 -> nothing. 1.0 full heartrate.
+	S1Beat        LightColour // The colour to use for the first beat of the heart.
+	S1Duration    int         // The number of milliseconds to leave the light on for the first heart beat.
+	S2Beat        LightColour // The colour to use for the second (S2) beat of the heart.
+	S2Duration    int         // The number of milliseconds to leave the light on for the second heart beat.
 }
 
 // loadConfiguration reads a JSON file from the location specified at configFile and creates a configuration
 // struct from the contents. On error a default configuration object is returned.
 func loadConfiguration(configFile string) (c Configuration, err error) {
-	c = Configuration{63, 10, 20, 30, "00:22:D0:97:C4:C0", 16, 20, 21, "/dev/ttyUSB0", 500, 500} // Create default configuration.
+	c = Configuration{63, 10, 20, 30, "00:22:D0:97:C4:C0", 16, 20, 21, "/dev/ttyUSB0", 500, 500, 0.9, LightColour{200, 10, 10, 50, 155}, 500, LightColour{200, 10, 10, 50, 50}, 50} // Create default configuration.
 
 	file, err := os.Open(configFile)
 	if err != nil {
