@@ -85,7 +85,6 @@ func main() {
 		if msg.Contact && !running {
 			log.Printf("INFO: Light on")
 			enableLight(config.S1Beat, dmx)
-			//embd.DigitalWrite(config.GPIOPinLight, embd.Low)
 		}
 
 		if msg.Contact && msg.HeartRate > 0 && !running {
@@ -107,7 +106,6 @@ func main() {
 		if !msg.Contact && !running {
 			log.Printf("INFO: Light off")
 			disableLight(dmx)
-			//embd.DigitalWrite(config.GPIOPinLight, embd.High)
 		}
 	}
 }
@@ -175,12 +173,11 @@ func pulseLight(c Configuration, dmx *dmx.DMX) {
 	time.Sleep(time.Millisecond * time.Duration(c.S1Duration))
 	disableLight(dmx)
 
+	time.Sleep(time.Millisecond * time.Duration(c.S1Pause))
+
 	enableLight(c.S2Beat, dmx)
 	time.Sleep(time.Millisecond * time.Duration(c.S2Duration))
 	disableLight(dmx)
-
-	//embd.DigitalWrite(c.GPIOPinLight, embd.Low)
-	//embd.DigitalWrite(c.GPIOPinLight, embd.High)
 	log.Printf("INFO: Light off")
 }
 

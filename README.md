@@ -24,11 +24,11 @@ This is the control software for [Nathen Street's](http://www.nathenstreet.com/)
 ```
 
 ## TODO:
-* Setup and installation on Ubuntu OS Mate.
+* ~~Setup and installation on Raspbian.~~
 * Installation details.
 * Tidy up a few odds and ends.
 * ~~Add delay between pulse and starting smoke.~~
-* Add in new state, light always on when we pair with the HRM. TO be finalised
+* ~~Add in new state, light always on when we pair with the HRM. TO be finalised~~
 * ~~Smoke machine on duration, milliseconds.~~
 * ~~Stub out main loop for processing installation logic.~~
 	* ~~Looks to see if we need to clean up the ticker.~~
