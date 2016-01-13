@@ -66,9 +66,9 @@ func main() {
 	embd.SetDirection(config.GPIOPinLight, embd.Out)
 
 	// Make sure all our GPIO pins are off.
-	embd.DigitalWrite(config.GPIOPinFan, embd.High)
-	embd.DigitalWrite(config.GPIOPinPump, embd.High)
-	embd.DigitalWrite(config.GPIOPinLight, embd.High)
+	embd.DigitalWrite(config.GPIOPinFan, embd.Low)
+	embd.DigitalWrite(config.GPIOPinPump, embd.Low)
+	embd.DigitalWrite(config.GPIOPinLight, embd.Low)
 
 	// Prototype installation powerup. Need to poll heart rate monitor and enable as
 	// required and close when HR drops to 0.
@@ -210,10 +210,10 @@ func enablePump(c Configuration, d chan bool) {
 		select {
 		case <-dt:
 			log.Printf("INFO: Pump on")
-			embd.DigitalWrite(c.GPIOPinPump, embd.Low)
+			embd.DigitalWrite(c.GPIOPinPump, embd.High)
 		case <-d:
 			log.Printf("INFO: Pump Off")
-			embd.DigitalWrite(c.GPIOPinPump, embd.High)
+			embd.DigitalWrite(c.GPIOPinPump, embd.Low)
 			return
 		}
 	}
@@ -228,13 +228,13 @@ func enableFan(c Configuration, d chan bool) {
 		select {
 		case <-dt:
 			log.Printf("INFO: Fan On")
-			embd.DigitalWrite(c.GPIOPinFan, embd.Low)
+			embd.DigitalWrite(c.GPIOPinFan, embd.High)
 		case <-d:
 			log.Printf("INFO: Fan Off")
 			// Wait for the fan duration to clear the smoke chamber.
 			ft := time.NewTimer(time.Millisecond * time.Duration(c.FanDuration)).C
 			<-ft
-			embd.DigitalWrite(c.GPIOPinFan, embd.High)
+			embd.DigitalWrite(c.GPIOPinFan, embd.Low)
 			return
 		}
 	}
