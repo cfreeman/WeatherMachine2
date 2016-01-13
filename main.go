@@ -210,10 +210,10 @@ func enablePump(c Configuration, d chan bool) {
 		select {
 		case <-dt:
 			log.Printf("INFO: Pump on")
-			embd.DigitalWrite(c.GPIOPinPump, embd.Low)
+			embd.DigitalWrite(c.GPIOPinPump, embd.High)
 		case <-d:
 			log.Printf("INFO: Pump Off")
-			embd.DigitalWrite(c.GPIOPinPump, embd.High)
+			embd.DigitalWrite(c.GPIOPinPump, embd.Low)
 			return
 		}
 	}
@@ -228,13 +228,13 @@ func enableFan(c Configuration, d chan bool) {
 		select {
 		case <-dt:
 			log.Printf("INFO: Fan On")
-			embd.DigitalWrite(c.GPIOPinFan, embd.Low)
+			embd.DigitalWrite(c.GPIOPinFan, embd.High)
 		case <-d:
 			log.Printf("INFO: Fan Off")
 			// Wait for the fan duration to clear the smoke chamber.
 			ft := time.NewTimer(time.Millisecond * time.Duration(c.FanDuration)).C
 			<-ft
-			embd.DigitalWrite(c.GPIOPinFan, embd.High)
+			embd.DigitalWrite(c.GPIOPinFan, embd.Low)
 			return
 		}
 	}
