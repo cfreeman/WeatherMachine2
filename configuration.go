@@ -50,12 +50,13 @@ type Configuration struct {
 	S2Beat        LightColour // The colour to use for the second (S2) beat of the heart.
 	S2Duration    int         // The number of milliseconds to leave the light on for the second heart beat.
 	S1Pause       int         // The number of milliseconds to pause between S1 and S2.
+	SmokeInterval int         // The number of milliseconds to wait before puffing smoke.
 }
 
 // loadConfiguration reads a JSON file from the location specified at configFile and creates a configuration
 // struct from the contents. On error a default configuration object is returned.
 func loadConfiguration(configFile string) (c Configuration, err error) {
-	c = Configuration{63, 10, 20, 30, "00:22:D0:97:C4:C0", 16, 20, 21, "/dev/ttyUSB0", 500, 500, 0.9, LightColour{200, 10, 10, 50, 155}, 500, LightColour{200, 10, 10, 50, 50}, 50, 50} // Create default configuration.
+	c = Configuration{63, 10, 20, 30, "00:22:D0:97:C4:C0", 16, 20, 21, "/dev/ttyUSB0", 500, 500, 0.9, LightColour{200, 10, 10, 50, 155}, 500, LightColour{200, 10, 10, 50, 50}, 50, 50, 1000} // Create default configuration.
 
 	file, err := os.Open(configFile)
 	if err != nil {

@@ -24,7 +24,7 @@ import (
 	"flag"
 	"github.com/akualab/dmx"
 	"github.com/kidoman/embd"
-	_ "github.com/kidoman/embd/host/all"
+	//_ "github.com/kidoman/embd/host/all"
 	"log"
 	"os/exec"
 	"strconv"
@@ -240,22 +240,32 @@ func enableFan(c Configuration, d chan bool) {
 	}
 }
 
+func puffSmoke(c Configuration, dmx *dmx.DMX) {
+	log.Printf("INFO: Smoke on")
+	dmx.SetChannel(1, byte(c.SmokeVolume))
+	dmx.Render()
+
+	time.Sleep(time.Millisecond * time.Duration(c.SmokeDuration))
+
+	log.Printf("INFO: Smoke off")
+	dmx.SetChannel(1, 0)
+	dmx.Render()
+}
+
 // enableSmoke enages the DMX smoke machine by the SmokeVolume amount in the configuration.
 // Smoke Machine remains on till being notified to stop on d.
 func enableSmoke(c Configuration, d chan bool, dmx *dmx.DMX) {
 	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTSmoke)).C
+	var ticker <-chan time.Time
 
 	for {
 		select {
 		case <-dt:
-			log.Printf("INFO: Smoke on")
-			dmx.SetChannel(1, byte(c.SmokeVolume))
-			dmx.Render()
-			st := time.NewTimer(time.Millisecond * time.Duration(c.SmokeDuration)).C
-			<-st
-			log.Printf("INFO: Smoke off")
-			dmx.SetChannel(1, 0)
-			dmx.Render()
+			puffSmoke(c, dmx)
+			ticker = time.NewTicker(time.Millisecond * time.Duration(c.SmokeInterval)).C
+
+		case <-ticker:
+			puffSmoke(c, dmx)
 
 		case <-d:
 			log.Printf("INFO: Smoke off")
