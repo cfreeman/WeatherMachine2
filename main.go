@@ -24,7 +24,7 @@ import (
 	"flag"
 	"github.com/akualab/dmx"
 	"github.com/kidoman/embd"
-	//_ "github.com/kidoman/embd/host/all"
+	_ "github.com/kidoman/embd/host/all"
 	"log"
 	"os/exec"
 	"strconv"
