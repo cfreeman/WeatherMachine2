@@ -30,12 +30,11 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type HRMsg struct {
-	HeartRate int
-	Contact   bool
+	HeartRate int  // The current heart rate as returned by the polar H7.
+	Contact   bool // Does the polar H7 currently have skin contact?
 }
 
 func main() {
@@ -45,7 +44,7 @@ func main() {
 	}
 	defer f.Close()
 	log.SetOutput(f)
-	log.Printf("INFO: Starting Weather-Machine")
+	log.Printf("INFO: Starting WeatherMachine2")
 
 	var configFile string
 	flag.StringVar(&configFile, "configFile", "weather-machine.json", "The path to the configuration file")
@@ -56,9 +55,17 @@ func main() {
 		log.Printf("INFO: Unable to open '%s', using default values", configFile)
 	}
 
-	// Connect to the GPIO ports.
-	embd.InitGPIO()
+	// Connect and initalise our Raspberry Pi GPIO pins.
+	err = embd.InitGPIO()
+	if err != nil {
+		log.Printf("ERROR: Unable to initalize the raspberry pi GPIO ports.")
+	}
 	defer embd.CloseGPIO()
+
+	embd.SetDirection(config.GPIOPinFan, embd.Out)
+	embd.SetDirection(config.GPIOPinPump, embd.Out)
+	embd.DigitalWrite(config.GPIOPinFan, embd.Low)
+	embd.DigitalWrite(config.GPIOPinPump, embd.Low)
 
 	// Connect to the DMX controller.
 	dmx, e := dmx.NewDMXConnection(config.SmokeAddress)
@@ -68,49 +75,16 @@ func main() {
 	}
 	defer dmx.Close()
 
-	// Init all our GPIO pins are off.
-	embd.SetDirection(config.GPIOPinFan, embd.Out)
-	embd.SetDirection(config.GPIOPinPump, embd.Out)
-	embd.DigitalWrite(config.GPIOPinFan, embd.Low)
-	embd.DigitalWrite(config.GPIOPinPump, embd.Low)
-
-	// Prototype installation powerup. Need to poll heart rate monitor and enable as
-	// required and close when HR drops to 0.
-	d := make(chan bool)
-	hrMsg := make(chan HRMsg)
-	running := false
+	hrMsg := make(chan HRMsg) // Channel for receiving heart rate messages from the PolarH7.
+	weatherMachine := WeatherMachine{make(chan bool), dmx, config}
+	update := idle
 
 	go pollHeartRateMonitor(config.HRMMacAddress, hrMsg)
 	for {
 		msg := <-hrMsg
-		log.Printf("C: %t HR: %d", msg.Contact, msg.HeartRate)
+		log.Printf("INFO C: %t HR: %d", msg.Contact, msg.HeartRate)
 
-		// When someone touches the installation. Give instant feedback.
-		if msg.Contact && !running {
-			log.Printf("INFO: Light on")
-			enableLight(config.S1Beat, dmx)
-		}
-
-		if msg.Contact && msg.HeartRate > 0 && !running {
-			go enableLightPulse(config, msg.HeartRate, d, dmx)
-			go enableSmoke(config, d, dmx)
-			go enableFan(config, d)
-			go enablePump(config, d)
-			running = true
-		} else if !msg.Contact && running {
-			// Stop all four elements of the installation.
-			d <- true
-			d <- true
-			d <- true
-			d <- true
-			running = false
-		}
-
-		// When someone lets go of the installation. Give instant feedback.
-		if !msg.Contact && !running {
-			log.Printf("INFO: Light off")
-			disableLight(dmx)
-		}
+		update = update(&weatherMachine, msg)
 	}
 }
 
@@ -149,133 +123,5 @@ func pollHeartRateMonitor(deviceID string, hr chan HRMsg) {
 		}
 
 		cmd.Wait()
-	}
-}
-
-func enableLight(l LightColour, dmx *dmx.DMX) {
-	dmx.SetChannel(4, byte(l.Red))
-	dmx.SetChannel(5, byte(l.Green))
-	dmx.SetChannel(6, byte(l.Blue))
-	dmx.SetChannel(7, byte(l.Amber))
-	dmx.SetChannel(8, byte(l.Dimmer))
-	dmx.Render()
-}
-
-func disableLight(dmx *dmx.DMX) {
-	dmx.SetChannel(4, 0)
-	dmx.SetChannel(5, 0)
-	dmx.SetChannel(6, 0)
-	dmx.SetChannel(7, 0)
-	dmx.SetChannel(8, 0)
-	dmx.Render()
-}
-
-// pulseLight pulses the light for a fixed duration.
-func pulseLight(c Configuration, dmx *dmx.DMX) {
-	log.Printf("INFO: Light on")
-	enableLight(c.S1Beat, dmx)
-	time.Sleep(time.Millisecond * time.Duration(c.S1Duration))
-	disableLight(dmx)
-
-	time.Sleep(time.Millisecond * time.Duration(c.S1Pause))
-
-	enableLight(c.S2Beat, dmx)
-	time.Sleep(time.Millisecond * time.Duration(c.S2Duration))
-	disableLight(dmx)
-	log.Printf("INFO: Light off")
-}
-
-// enableLightPulse starts the light pulsing by the frequency defined by hr. The light remains
-// pulsing till being notified to stop on d.
-func enableLightPulse(c Configuration, hr int, d chan bool, dmx *dmx.DMX) {
-	// Perform the first heart beat straight away.
-	pulseLight(c, dmx)
-
-	dt := int((60000.0 / float32(hr)) * c.BeatRate)
-	ticker := time.NewTicker(time.Millisecond * time.Duration(dt)).C
-
-	// Sharp fixed length, pulse of light with variable off gap depending on HR.
-	for {
-		select {
-		case <-ticker:
-			pulseLight(c, dmx)
-		case <-d:
-			return
-		}
-	}
-}
-
-// enablePump switches the relay on for the water pump after DeltaTPump milliseconds have expired
-// in the configuration.  Pump remains on till being notified to stop on d.
-func enablePump(c Configuration, d chan bool) {
-	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTPump)).C
-
-	for {
-		select {
-		case <-dt:
-			log.Printf("INFO: Pump on")
-			embd.DigitalWrite(c.GPIOPinPump, embd.High)
-		case <-d:
-			log.Printf("INFO: Pump Off")
-			embd.DigitalWrite(c.GPIOPinPump, embd.Low)
-			return
-		}
-	}
-}
-
-// enableFan switches the relay on for the fan after DeltaTFan milliseconds have expired
-// in the configuration.  Pump remains on till being notified to stop on d.
-func enableFan(c Configuration, d chan bool) {
-	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTFan)).C
-
-	for {
-		select {
-		case <-dt:
-			log.Printf("INFO: Fan On")
-			embd.DigitalWrite(c.GPIOPinFan, embd.High)
-		case <-d:
-			log.Printf("INFO: Fan Off")
-			// Wait for the fan duration to clear the smoke chamber.
-			ft := time.NewTimer(time.Millisecond * time.Duration(c.FanDuration)).C
-			<-ft
-			embd.DigitalWrite(c.GPIOPinFan, embd.Low)
-			return
-		}
-	}
-}
-
-func puffSmoke(c Configuration, dmx *dmx.DMX) {
-	log.Printf("INFO: Smoke on")
-	dmx.SetChannel(1, byte(c.SmokeVolume))
-	dmx.Render()
-
-	time.Sleep(time.Millisecond * time.Duration(c.SmokeDuration))
-
-	log.Printf("INFO: Smoke off")
-	dmx.SetChannel(1, 0)
-	dmx.Render()
-}
-
-// enableSmoke enages the DMX smoke machine by the SmokeVolume amount in the configuration.
-// Smoke Machine remains on till being notified to stop on d.
-func enableSmoke(c Configuration, d chan bool, dmx *dmx.DMX) {
-	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTSmoke)).C
-	var ticker <-chan time.Time
-
-	for {
-		select {
-		case <-dt:
-			puffSmoke(c, dmx)
-			ticker = time.NewTicker(time.Millisecond * time.Duration(c.SmokeInterval)).C
-
-		case <-ticker:
-			puffSmoke(c, dmx)
-
-		case <-d:
-			log.Printf("INFO: Smoke off")
-			dmx.SetChannel(1, 0)
-			dmx.Render()
-			return
-		}
 	}
 }
