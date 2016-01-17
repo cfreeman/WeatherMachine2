@@ -26,6 +26,7 @@ import (
 	"github.com/kidoman/embd"
 	_ "github.com/kidoman/embd/host/all"
 	"log"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -38,9 +39,15 @@ type HRMsg struct {
 }
 
 func main() {
+	f, err := os.OpenFile("WeatherMachine2.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		return // Ah-oh. Unable to log to file.
+	}
+	defer f.Close()
+	log.SetOutput(f)
 	log.Printf("INFO: Starting Weather-Machine")
-	var configFile string
 
+	var configFile string
 	flag.StringVar(&configFile, "configFile", "weather-machine.json", "The path to the configuration file")
 	flag.Parse()
 
@@ -56,15 +63,14 @@ func main() {
 	// Connect to the DMX controller.
 	dmx, e := dmx.NewDMXConnection(config.SmokeAddress)
 	if e != nil {
-		log.Printf("ERROR: Unable to make DMX connection to smoke machine.")
+		log.Printf("ERROR: Unable to connect to the DMX interface.")
 		return
 	}
 	defer dmx.Close()
 
+	// Init all our GPIO pins are off.
 	embd.SetDirection(config.GPIOPinFan, embd.Out)
 	embd.SetDirection(config.GPIOPinPump, embd.Out)
-
-	// Make sure all our GPIO pins are off.
 	embd.DigitalWrite(config.GPIOPinFan, embd.Low)
 	embd.DigitalWrite(config.GPIOPinPump, embd.Low)
 
