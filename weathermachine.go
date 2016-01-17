@@ -95,6 +95,7 @@ func running(state *WeatherMachine, msg HRMsg) stateFn {
 // ****************************************************************************
 // ****************************************************************************
 
+// enableLight turns on the light via the supplied DMX connection 'dmx' with the supplied colour 'l'.
 func enableLight(l LightColour, dmx *dmx.DMX) {
 	log.Printf("INFO: Light on")
 	dmx.SetChannel(4, byte(l.Red))
@@ -105,6 +106,7 @@ func enableLight(l LightColour, dmx *dmx.DMX) {
 	dmx.Render()
 }
 
+// disableLight turns off the light via the supplied DMX connection 'dmx'.
 func disableLight(dmx *dmx.DMX) {
 	log.Printf("INFO: Light off")
 	dmx.SetChannel(4, 0)
@@ -142,6 +144,7 @@ func enableLightPulse(c Configuration, hr int, d chan bool, dmx *dmx.DMX) {
 		select {
 		case <-ticker:
 			pulseLight(c, dmx)
+
 		case <-d:
 			return
 		}
@@ -149,7 +152,7 @@ func enableLightPulse(c Configuration, hr int, d chan bool, dmx *dmx.DMX) {
 }
 
 // enablePump switches the relay on for the water pump after DeltaTPump milliseconds have expired
-// in the configuration.  Pump remains on till being notified to stop on d.
+// in the configuration. Pump remains on till being notified to stop on d.
 func enablePump(c Configuration, d chan bool) {
 	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTPump)).C
 
@@ -158,6 +161,7 @@ func enablePump(c Configuration, d chan bool) {
 		case <-dt:
 			log.Printf("INFO: Pump on")
 			embd.DigitalWrite(c.GPIOPinPump, embd.High)
+
 		case <-d:
 			log.Printf("INFO: Pump Off")
 			embd.DigitalWrite(c.GPIOPinPump, embd.Low)
@@ -167,7 +171,7 @@ func enablePump(c Configuration, d chan bool) {
 }
 
 // enableFan switches the relay on for the fan after DeltaTFan milliseconds have expired
-// in the configuration.  Pump remains on till being notified to stop on d.
+// in the configuration. Fan remains on till being notified to stop on d.
 func enableFan(c Configuration, d chan bool) {
 	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTFan)).C
 
@@ -176,6 +180,7 @@ func enableFan(c Configuration, d chan bool) {
 		case <-dt:
 			log.Printf("INFO: Fan On")
 			embd.DigitalWrite(c.GPIOPinFan, embd.High)
+
 		case <-d:
 			log.Printf("INFO: Fan Off")
 			// Wait for the fan duration to clear the smoke chamber.
@@ -187,6 +192,8 @@ func enableFan(c Configuration, d chan bool) {
 	}
 }
 
+// puffSmoke enables the smoke machine via the supplied DMX connection 'dmx' for a period of
+// time and intentsity supplied in configuration.
 func puffSmoke(c Configuration, dmx *dmx.DMX) {
 	log.Printf("INFO: Smoke on")
 	dmx.SetChannel(1, byte(c.SmokeVolume))
