@@ -43,7 +43,6 @@ var _ = Describe("Configuration", func() {
 			Ω(c.HRMMacAddress).Should(Equal("00:22:D0:97:C4:C0"))
 			Ω(c.GPIOPinFan).Should(Equal(16))
 			Ω(c.GPIOPinPump).Should(Equal(20))
-			Ω(c.GPIOPinLight).Should(Equal(21))
 		})
 
 		It("should be able to load a valid config file", func() {
@@ -57,7 +56,6 @@ var _ = Describe("Configuration", func() {
 			Ω(c.HRMMacAddress).Should(Equal("FF:FF:FF:FF:FF:FF"))
 			Ω(c.GPIOPinFan).Should(Equal(1))
 			Ω(c.GPIOPinPump).Should(Equal(2))
-			Ω(c.GPIOPinLight).Should(Equal(3))
 			Ω(c.BeatRate).Should(BeNumerically("~", 0.8, 0.001))
 			Ω(c.S1Beat.Red).Should(Equal(100))
 		})

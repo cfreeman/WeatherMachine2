@@ -63,12 +63,10 @@ func main() {
 
 	embd.SetDirection(config.GPIOPinFan, embd.Out)
 	embd.SetDirection(config.GPIOPinPump, embd.Out)
-	embd.SetDirection(config.GPIOPinLight, embd.Out)
 
 	// Make sure all our GPIO pins are off.
 	embd.DigitalWrite(config.GPIOPinFan, embd.Low)
 	embd.DigitalWrite(config.GPIOPinPump, embd.Low)
-	embd.DigitalWrite(config.GPIOPinLight, embd.Low)
 
 	// Prototype installation powerup. Need to poll heart rate monitor and enable as
 	// required and close when HR drops to 0.
