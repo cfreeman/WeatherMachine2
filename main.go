@@ -30,6 +30,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type HRMsg struct {
@@ -75,16 +76,41 @@ func main() {
 	}
 	defer dmx.Close()
 
+	conf := make(chan Configuration)
 	hrMsg := make(chan HRMsg) // Channel for receiving heart rate messages from the PolarH7.
 	weatherMachine := WeatherMachine{make(chan bool), dmx, config}
 	update := idle
 
 	go pollHeartRateMonitor(config.HRMMacAddress, hrMsg)
+	go updateConfiguration(conf, configFile)
 	for {
 		msg := <-hrMsg
 		log.Printf("INFO C: %t HR: %d", msg.Contact, msg.HeartRate)
 
+		select {
+		case c := <-conf:
+			weatherMachine.config = c
+			// Use a new config within the weather machine if the configfile has been updated.
+		default:
+			// Don't need to do anything. Just don't block.
+		}
+
 		update = update(&weatherMachine, msg)
+	}
+}
+
+func updateConfiguration(c chan Configuration, configFile string) {
+	ticker := time.NewTicker(time.Second * 30).C
+
+	for {
+		select {
+		case <-ticker:
+			config, err := loadConfiguration(configFile)
+			if err != nil {
+				log.Printf("INFO: Unable to open '%s', using default values", configFile)
+			}
+			c <- config
+		}
 	}
 }
 
