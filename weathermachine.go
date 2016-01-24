@@ -47,7 +47,7 @@ type stateFn func(state *WeatherMachine, msg HRMsg) stateFn
 func idle(state *WeatherMachine, msg HRMsg) (sF stateFn) {
 	if msg.Contact {
 		log.Printf("INFO: entering warmup")
-		enableLight(state.config.S1Beat, state.dmx)
+		enableLight(state.config.S1Beat, state.config, state.dmx)
 		return warmup // skin contact has been made, enable light and enter warmup.
 	}
 
@@ -65,7 +65,7 @@ func warmup(state *WeatherMachine, msg HRMsg) stateFn {
 		log.Printf("INFO: entering running")
 		return running // skin contact and heart rate recieved, start the installation.
 	} else if !msg.Contact {
-		disableLight(state.dmx)
+		disableLight(state.config, state.dmx)
 
 		log.Printf("INFO: entering idle")
 		return idle // skin contact lost. Return to idle.
@@ -96,8 +96,9 @@ func running(state *WeatherMachine, msg HRMsg) stateFn {
 // ****************************************************************************
 
 // enableLight turns on the light via the supplied DMX connection 'dmx' with the supplied colour 'l'.
-func enableLight(l LightColour, dmx *dmx.DMX) {
+func enableLight(l LightColour, c Configuration, dmx *dmx.DMX) {
 	log.Printf("INFO: Light on")
+	embd.DigitalWrite(c.GPIOPinLight, embd.High)
 	dmx.SetChannel(4, byte(l.Red))
 	dmx.SetChannel(5, byte(l.Green))
 	dmx.SetChannel(6, byte(l.Blue))
@@ -107,8 +108,9 @@ func enableLight(l LightColour, dmx *dmx.DMX) {
 }
 
 // disableLight turns off the light via the supplied DMX connection 'dmx'.
-func disableLight(dmx *dmx.DMX) {
+func disableLight(c Configuration, dmx *dmx.DMX) {
 	log.Printf("INFO: Light off")
+	embd.DigitalWrite(c.GPIOPinLight, embd.Low)
 	dmx.SetChannel(4, 0)
 	dmx.SetChannel(5, 0)
 	dmx.SetChannel(6, 0)
@@ -119,15 +121,15 @@ func disableLight(dmx *dmx.DMX) {
 
 // pulseLight pulses the light for a fixed duration.
 func pulseLight(c Configuration, dmx *dmx.DMX) {
-	enableLight(c.S1Beat, dmx)
+	enableLight(c.S1Beat, c, dmx)
 	time.Sleep(time.Millisecond * time.Duration(c.S1Duration))
-	disableLight(dmx)
+	disableLight(c, dmx)
 
 	time.Sleep(time.Millisecond * time.Duration(c.S1Pause))
 
-	enableLight(c.S2Beat, dmx)
+	enableLight(c.S2Beat, c, dmx)
 	time.Sleep(time.Millisecond * time.Duration(c.S2Duration))
-	disableLight(dmx)
+	disableLight(c, dmx)
 }
 
 // enableLightPulse starts the light pulsing by the frequency defined by hr. The light remains

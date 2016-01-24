@@ -65,8 +65,10 @@ func main() {
 
 	embd.SetDirection(config.GPIOPinFan, embd.Out)
 	embd.SetDirection(config.GPIOPinPump, embd.Out)
+	embd.SetDirection(config.GPIOPinLight, embd.Out)
 	embd.DigitalWrite(config.GPIOPinFan, embd.Low)
 	embd.DigitalWrite(config.GPIOPinPump, embd.Low)
+	embd.DigitalWrite(config.GPIOPinLight, embd.Low)
 
 	// Connect to the DMX controller.
 	dmx, e := dmx.NewDMXConnection(config.SmokeAddress)
