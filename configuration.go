@@ -21,6 +21,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 )
 
@@ -56,7 +57,7 @@ type Configuration struct {
 // loadConfiguration reads a JSON file from the location specified at configFile and creates a configuration
 // struct from the contents. On error a default configuration object is returned.
 func loadConfiguration(configFile string) (c Configuration, err error) {
-	c = Configuration{63, 10, 20, 30, "00:22:D0:97:C4:C0", 16, 20, 19, "/dev/ttyUSB0", 500, 500, 0.9, LightColour{200, 10, 10, 50, 155}, 500, LightColour{200, 10, 10, 50, 50}, 50, 50, 1000} // Create default configuration.
+	c = Configuration{63, 10, 20, 30, "0", 16, 20, 19, "/dev/ttyUSB0", 500, 500, 0.9, LightColour{200, 10, 10, 50, 155}, 500, LightColour{200, 10, 10, 50, 50}, 50, 50, 1000} // Create default configuration.
 
 	file, err := os.Open(configFile)
 	if err != nil {
@@ -68,4 +69,20 @@ func loadConfiguration(configFile string) (c Configuration, err error) {
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&c)
 	return c, err
+}
+
+func saveConfiguration(configFile string, c Configuration) {
+	// Save the default configuration file to disk for use later.
+	file, err := os.Create(configFile)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	err = encoder.Encode(&c)
+	if err != nil {
+		log.Printf("ERROR: Unable to encode configuration file")
+	}
+	log.Printf("INFO: Saved configuration file")
 }

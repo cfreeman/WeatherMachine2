@@ -24,7 +24,7 @@ import (
 	"flag"
 	"github.com/akualab/dmx"
 	"github.com/kidoman/embd"
-	_ "github.com/kidoman/embd/host/all"
+	//_ "github.com/kidoman/embd/host/all"
 	"log"
 	"os"
 	"os/exec"
@@ -54,6 +54,12 @@ func main() {
 	config, err := loadConfiguration(configFile)
 	if err != nil {
 		log.Printf("INFO: Unable to open '%s', using default values", configFile)
+	}
+
+	// If we don't have the address of a heart rate monitor. Look for it.
+	if strings.Compare(config.HRMMacAddress, "0") == 0 {
+		config.HRMMacAddress = scanHeartRateMonitor()
+		saveConfiguration(configFile, config)
 	}
 
 	// Connect and initalise our Raspberry Pi GPIO pins.
@@ -114,6 +120,32 @@ func updateConfiguration(c chan Configuration, configFile string) {
 			c <- config
 		}
 	}
+}
+
+func scanHeartRateMonitor() string {
+	cmd := exec.Command("./WeatherMachine2-scan")
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Printf("ERROR: Unable to scan HRM.")
+		return ""
+	}
+
+	scanner := bufio.NewScanner(stdout)
+	id := ""
+	go func() {
+		for scanner.Scan() {
+			id = scanner.Text()
+			return
+		}
+	}()
+
+	if err := cmd.Start(); err != nil {
+		log.Printf("ERROR: Unable to start scanning HRM.")
+		return id
+	}
+
+	cmd.Wait()
+	return id
 }
 
 // pollHeartRateMonitor reads from the bluetooth heartrate monitor at the address specified
