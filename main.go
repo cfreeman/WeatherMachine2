@@ -127,11 +127,11 @@ func scanHeartRateMonitor() string {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Printf("ERROR: Unable to scan HRM.")
-		return ""
+		return "0"
 	}
 
 	scanner := bufio.NewScanner(stdout)
-	id := ""
+	id := "0"
 	go func() {
 		for scanner.Scan() {
 			id = scanner.Text()
