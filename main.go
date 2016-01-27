@@ -56,12 +56,6 @@ func main() {
 		log.Printf("INFO: Unable to open '%s', using default values", configFile)
 	}
 
-	// If we don't have the address of a heart rate monitor. Look for it.
-	if strings.Compare(config.HRMMacAddress, "0") == 0 {
-		config.HRMMacAddress = scanHeartRateMonitor()
-		saveConfiguration(configFile, config)
-	}
-
 	// Connect and initalise our Raspberry Pi GPIO pins.
 	err = embd.InitGPIO()
 	if err != nil {
@@ -75,6 +69,14 @@ func main() {
 	embd.DigitalWrite(config.GPIOPinFan, embd.Low)
 	embd.DigitalWrite(config.GPIOPinPump, embd.Low)
 	embd.DigitalWrite(config.GPIOPinLight, embd.Low)
+
+	// If we don't have the address of a heart rate monitor. Look for it.
+	if strings.Compare(config.HRMMacAddress, "0") == 0 {
+		log.Printf("INFO: Scanning for HRM.")
+		config.HRMMacAddress = scanHeartRateMonitor()
+		log.Printf("INFO: Found %s\n", config.HRMMacAddress)
+		saveConfiguration(configFile, config)
+	}
 
 	// Connect to the DMX controller.
 	dmx, e := dmx.NewDMXConnection(config.SmokeAddress)
