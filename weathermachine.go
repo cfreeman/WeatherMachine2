@@ -153,20 +153,33 @@ func enableLightPulse(c Configuration, hr int, d chan bool, dmx *dmx.DMX) {
 	}
 }
 
+// pulsePump runs the pump for the duration specified in the configuration.
+func pulsePump(c Configuration) {
+	log.Printf("INFO: Pump on")
+	embd.DigitalWrite(c.GPIOPinPump, embd.High)
+
+	time.Sleep(time.Millisecond * time.Duration(c.PumpDuration))
+
+	log.Printf("INFO: Pump Off")
+	embd.DigitalWrite(c.GPIOPinPump, embd.Low)
+}
+
 // enablePump switches the relay on for the water pump after DeltaTPump milliseconds have expired
 // in the configuration. Pump remains on till being notified to stop on d.
 func enablePump(c Configuration, d chan bool) {
 	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTPump)).C
+	var ticker <-chan time.Time
 
 	for {
 		select {
 		case <-dt:
-			log.Printf("INFO: Pump on")
-			embd.DigitalWrite(c.GPIOPinPump, embd.High)
+			pulsePump(c)
+			ticker = time.NewTicker(time.Millisecond * time.Duration(c.PumpInterval)).C
+
+		case <-ticker:
+			pulsePump(c)
 
 		case <-d:
-			log.Printf("INFO: Pump Off")
-			embd.DigitalWrite(c.GPIOPinPump, embd.Low)
 			return
 		}
 	}
