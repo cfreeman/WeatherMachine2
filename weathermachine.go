@@ -48,6 +48,8 @@ func idle(state *WeatherMachine, msg HRMsg) (sF stateFn) {
 	if msg.Contact {
 		log.Printf("INFO: entering warmup")
 		enableLight(state.config.S1Beat, state.config, state.dmx)
+		go enablePump(state.config, state.stop)
+
 		return warmup // skin contact has been made, enable light and enter warmup.
 	}
 
@@ -60,11 +62,13 @@ func warmup(state *WeatherMachine, msg HRMsg) stateFn {
 		go enableLightPulse(state.config, msg.HeartRate, state.stop, state.dmx)
 		go enableSmoke(state.config, state.stop, state.dmx)
 		go enableFan(state.config, state.stop)
-		go enablePump(state.config, state.stop)
 
 		log.Printf("INFO: entering running")
 		return running // skin contact and heart rate recieved, start the installation.
 	} else if !msg.Contact {
+		state.stop <- true // Pump starts at initial contact. If we lost contact between
+		// then and now we need to shut it down.
+
 		disableLight(state.config, state.dmx)
 
 		log.Printf("INFO: entering idle")
