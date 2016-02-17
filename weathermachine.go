@@ -62,7 +62,7 @@ func warmup(state *WeatherMachine, msg HRMsg) stateFn {
 	if msg.Contact && msg.HeartRate > 0 {
 		// Wait for the fog to clear from the last run before running again.
 		log.Printf("INFO: Waiting for fog to clear")
-		d := int64(state.config.FanDuration) - time.Since(state.lastRun).Nanoseconds()
+		d := (int64(state.config.FanDuration)*1000000) - time.Since(state.lastRun).Nanoseconds()
 		time.Sleep(time.Nanosecond * time.Duration(d))
 
 		log.Printf("INFO: entering running")
