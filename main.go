@@ -24,7 +24,7 @@ import (
 	"flag"
 	"github.com/akualab/dmx"
 	"github.com/kidoman/embd"
-	_ "github.com/kidoman/embd/host/all"
+	//_ "github.com/kidoman/embd/host/all"
 	"log"
 	"os"
 	"os/exec"
@@ -88,7 +88,7 @@ func main() {
 
 	conf := make(chan Configuration)
 	hrMsg := make(chan HRMsg) // Channel for receiving heart rate messages from the PolarH7.
-	weatherMachine := WeatherMachine{make(chan bool), dmx, config}
+	weatherMachine := WeatherMachine{make(chan bool), dmx, config, time.Now().Add(-time.Duration(config.FanDuration))}
 	update := idle
 
 	go pollHeartRateMonitor(config.HRMMacAddress, hrMsg)

@@ -22,16 +22,17 @@ package main
 import (
 	"github.com/akualab/dmx"
 	"github.com/kidoman/embd"
-	_ "github.com/kidoman/embd/host/all"
+	//_ "github.com/kidoman/embd/host/all"
 	"log"
 	"time"
 )
 
 // WeatherMachine holds connections to everything we need to manipulate the installation.
 type WeatherMachine struct {
-	stop   chan bool     // Channel for stopping the control elements of the installation.
-	dmx    *dmx.DMX      // The DMX connection for writting messages to the Smoke machine and lights.
-	config Configuration // The configuration element for the installation.
+	stop    chan bool     // Channel for stopping the control elements of the installation.
+	dmx     *dmx.DMX      // The DMX connection for writting messages to the Smoke machine and lights.
+	config  Configuration // The configuration element for the installation.
+	lastRun time.Time     // The last time the installation was run.
 }
 
 // ****************************************************************************
@@ -59,15 +60,21 @@ func idle(state *WeatherMachine, msg HRMsg) (sF stateFn) {
 // warmup is the state the weathermachine enters when someone first touches it.
 func warmup(state *WeatherMachine, msg HRMsg) stateFn {
 	if msg.Contact && msg.HeartRate > 0 {
+		// Wait for the fog to clear from the last run before running again.
+		log.Printf("INFO: Waiting for fog to clear")
+		d := int64(state.config.FanDuration) - time.Since(state.lastRun).Nanoseconds()
+		time.Sleep(time.Nanosecond * time.Duration(d))
+
+		log.Printf("INFO: entering running")
 		go enableLightPulse(state.config, msg.HeartRate, state.stop, state.dmx)
 		go enableSmoke(state.config, state.stop, state.dmx)
 		go enableFan(state.config, state.stop)
 
-		log.Printf("INFO: entering running")
 		return running // skin contact and heart rate recieved, start the installation.
 	} else if !msg.Contact {
 		state.stop <- true // Pump starts at initial contact. If we lost contact between
 		// then and now we need to shut it down.
+		state.lastRun = time.Now()
 
 		disableLight(state.config, state.dmx)
 
@@ -201,10 +208,10 @@ func enableFan(c Configuration, d chan bool) {
 			embd.DigitalWrite(c.GPIOPinFan, embd.High)
 
 		case <-d:
-			log.Printf("INFO: Fan Off")
 			// Wait for the fan duration to clear the smoke chamber.
 			ft := time.NewTimer(time.Millisecond * time.Duration(c.FanDuration)).C
 			<-ft
+			log.Printf("INFO: Fan Off")
 			embd.DigitalWrite(c.GPIOPinFan, embd.Low)
 			return
 		}
