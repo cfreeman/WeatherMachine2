@@ -92,6 +92,7 @@ func running(state *WeatherMachine, msg HRMsg) stateFn {
 		state.stop <- true
 		state.stop <- true
 		state.stop <- true
+		state.lastRun = time.Now()
 
 		log.Printf("INFO: entering idle")
 		return idle // skin contact lost. Return to idle.
