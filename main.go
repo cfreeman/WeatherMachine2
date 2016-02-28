@@ -39,8 +39,13 @@ type HRMsg struct {
 }
 
 
-// I2C variables
-var address, mode, regData byte = 0x20, 0x06, 0xff
+// I2C 
+type RelayControl struct {
+  bus           embd.I2CBus
+  address       byte
+  mode          byte
+  regData       byte
+}
 
 
 func main() {
@@ -82,9 +87,10 @@ func main() {
         log.Printf("ERROR: Unable to initalize the Raspberry Pi I2C. Ensure you have configured the PI I2C ports")
     }
     defer embd.CloseI2C()
-    
     bus := embd.NewI2CBus(1)
-	bus.WriteByteToReg(address, mode, regData)
+
+	// Create relay controller
+    relayCtrl := NewRelayCtrl(bus)
 
 
 	// If we don't have the address of a heart rate monitor. Look for it.
@@ -105,7 +111,7 @@ func main() {
 
 	conf := make(chan Configuration)
 	hrMsg := make(chan HRMsg) // Channel for receiving heart rate messages from the PolarH7.
-	weatherMachine := WeatherMachine{make(chan bool), dmx, config, time.Now().Add(-time.Duration(config.FanDuration)), bus}
+	weatherMachine := WeatherMachine{make(chan bool), dmx, config, time.Now().Add(-time.Duration(config.FanDuration)), relayCtrl}
 	update := idle
 
 	go pollHeartRateMonitor(config.HRMMacAddress, hrMsg)
@@ -125,6 +131,12 @@ func main() {
 		update = update(&weatherMachine, msg)
 	}
 }
+
+
+func NewRelayCtrl(bus embd.I2CBus) *RelayControl {
+  return &RelayControl{ bus: bus, address: 0x20, mode: 0x06, regData: 0xff }
+}
+
 
 func updateConfiguration(c chan Configuration, configFile string) {
 	ticker := time.NewTicker(time.Second * 30).C
