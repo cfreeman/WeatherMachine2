@@ -39,13 +39,6 @@ type HRMsg struct {
 }
 
 
-// type RELAY struct {
-// 	address 	byte
-// 	mode 		byte
-// 	regData		byte
-// 	bus			I2CBus
-// }
-
 // I2C variables
 var address, mode, regData byte = 0x20, 0x06, 0xff
 
@@ -84,13 +77,13 @@ func main() {
 
 
 	// Connect and initalise Raspberry Pi I2C
-	err := embd.InitI2C(); 
+	err = embd.InitI2C(); 
 	if err != nil {
         log.Printf("ERROR: Unable to initalize the Raspberry Pi I2C. Ensure you have configured the PI I2C ports")
     }
     defer embd.CloseI2C()
     
-    bus = bus = embd.NewI2CBus(1)
+    bus := embd.NewI2CBus(1)
 	bus.WriteByteToReg(address, mode, regData)
 
 

@@ -33,7 +33,7 @@ type WeatherMachine struct {
 	dmx     *dmx.DMX      // The DMX connection for writting messages to the Smoke machine and lights.
 	config  Configuration // The configuration element for the installation.
 	lastRun time.Time     // The last time the installation was run.
-	bus		*I2CBus 	  // THe I2C bus
+	bus		embd.I2CBus  // THe I2C bus
 }
 
 
@@ -168,7 +168,7 @@ func enableLightPulse(c Configuration, hr int, d chan bool, dmx *dmx.DMX) {
 }
 
 // pulsePump runs the pump for the duration specified in the configuration.
-func pulsePump(c Configuration, bus *I2CBus) {
+func pulsePump(c Configuration, bus I2CBus) {
 	log.Printf("INFO: Pump on")
 	// embd.DigitalWrite(c.GPIOPinPump, embd.High)
 
@@ -186,18 +186,18 @@ func pulsePump(c Configuration, bus *I2CBus) {
 
 // enablePump switches the relay on for the water pump after DeltaTPump milliseconds have expired
 // in the configuration. Pump remains on till being notified to stop on d.
-func enablePump(c Configuration, d chan bool, bus *I2CBus) {
+func enablePump(c Configuration, d chan bool, bus I2CBus) {
 	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTPump)).C
 	var ticker <-chan time.Time
 
 	for {
 		select {
 		case <-dt:
-			pulsePump(c)
+			pulsePump(c, bus)
 			ticker = time.NewTicker(time.Millisecond * time.Duration(c.PumpInterval)).C
 
 		case <-ticker:
-			pulsePump(c)
+			pulsePump(c, bus)
 
 		case <-d:
 			return
@@ -207,7 +207,7 @@ func enablePump(c Configuration, d chan bool, bus *I2CBus) {
 
 // enableFan switches the relay on for the fan after DeltaTFan milliseconds have expired
 // in the configuration. Fan remains on till being notified to stop on d.
-func enableFan(c Configuration, d chan bool, bus *I2CBus) {
+func enableFan(c Configuration, d chan bool, bus I2CBus) {
 	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTFan)).C
 
 	for {
