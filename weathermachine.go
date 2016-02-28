@@ -35,6 +35,7 @@ type WeatherMachine struct {
 	lastRun time.Time     // The last time the installation was run.
 }
 
+
 // ****************************************************************************
 // ****************************************************************************
 // Functions for manipulating the installation state; idle, warmup and running.
@@ -110,7 +111,7 @@ func running(state *WeatherMachine, msg HRMsg) stateFn {
 // enableLight turns on the light via the supplied DMX connection 'dmx' with the supplied colour 'l'.
 func enableLight(l LightColour, c Configuration, dmx *dmx.DMX) {
 	log.Printf("INFO: Light on")
-	embd.DigitalWrite(c.GPIOPinLight, embd.High)
+	// embd.DigitalWrite(c.GPIOPinLight, embd.High)
 	dmx.SetChannel(4, byte(l.Red))
 	dmx.SetChannel(5, byte(l.Green))
 	dmx.SetChannel(6, byte(l.Blue))
@@ -122,7 +123,7 @@ func enableLight(l LightColour, c Configuration, dmx *dmx.DMX) {
 // disableLight turns off the light via the supplied DMX connection 'dmx'.
 func disableLight(c Configuration, dmx *dmx.DMX) {
 	log.Printf("INFO: Light off")
-	embd.DigitalWrite(c.GPIOPinLight, embd.Low)
+	// embd.DigitalWrite(c.GPIOPinLight, embd.Low)
 	dmx.SetChannel(4, 0)
 	dmx.SetChannel(5, 0)
 	dmx.SetChannel(6, 0)
@@ -168,12 +169,18 @@ func enableLightPulse(c Configuration, hr int, d chan bool, dmx *dmx.DMX) {
 // pulsePump runs the pump for the duration specified in the configuration.
 func pulsePump(c Configuration) {
 	log.Printf("INFO: Pump on")
-	embd.DigitalWrite(c.GPIOPinPump, embd.High)
+	// embd.DigitalWrite(c.GPIOPinPump, embd.High)
+
+	regData &= ^(byte(0x1)<<0)
+    bus.WriteByteToReg(address, mode, regData)
 
 	time.Sleep(time.Millisecond * time.Duration(c.PumpDuration))
 
 	log.Printf("INFO: Pump Off")
-	embd.DigitalWrite(c.GPIOPinPump, embd.Low)
+	// embd.DigitalWrite(c.GPIOPinPump, embd.Low)
+
+	regData |= (byte(0x1)<<0)
+    bus.WriteByteToReg(address, mode, regData)
 }
 
 // enablePump switches the relay on for the water pump after DeltaTPump milliseconds have expired
@@ -206,14 +213,18 @@ func enableFan(c Configuration, d chan bool) {
 		select {
 		case <-dt:
 			log.Printf("INFO: Fan On")
-			embd.DigitalWrite(c.GPIOPinFan, embd.High)
+			// embd.DigitalWrite(c.GPIOPinFan, embd.High)
+			regData &= ^(byte(0x1)<<1)
+    		bus.WriteByteToReg(address, mode, regData)
 
 		case <-d:
 			// Wait for the fan duration to clear the smoke chamber.
 			ft := time.NewTimer(time.Millisecond * time.Duration(c.FanDuration)).C
 			<-ft
 			log.Printf("INFO: Fan Off")
-			embd.DigitalWrite(c.GPIOPinFan, embd.Low)
+			// embd.DigitalWrite(c.GPIOPinFan, embd.Low)
+			regData |= (byte(0x1)<<1)
+    		bus.WriteByteToReg(address, mode, regData)
 			return
 		}
 	}

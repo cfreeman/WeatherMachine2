@@ -38,6 +38,11 @@ type HRMsg struct {
 	Contact   bool // Does the polar H7 currently have skin contact?
 }
 
+
+// I2C variables
+var address, mode, regData byte = 0x20, 0x06, 0xff
+var bus I2CBus
+
 func main() {
 	f, err := os.OpenFile("WeatherMachine2.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -57,18 +62,30 @@ func main() {
 	}
 
 	// Connect and initalise our Raspberry Pi GPIO pins.
-	err = embd.InitGPIO()
-	if err != nil {
-		log.Printf("ERROR: Unable to initalize the raspberry pi GPIO ports.")
-	}
-	defer embd.CloseGPIO()
+	// err = embd.InitGPIO()
+	// if err != nil {
+	// 	log.Printf("ERROR: Unable to initalize the raspberry pi GPIO ports.")
+	// }
+	// defer embd.CloseGPIO()
 
-	embd.SetDirection(config.GPIOPinFan, embd.Out)
-	embd.SetDirection(config.GPIOPinPump, embd.Out)
-	embd.SetDirection(config.GPIOPinLight, embd.Out)
-	embd.DigitalWrite(config.GPIOPinFan, embd.Low)
-	embd.DigitalWrite(config.GPIOPinPump, embd.Low)
-	embd.DigitalWrite(config.GPIOPinLight, embd.Low)
+	// embd.SetDirection(config.GPIOPinFan, embd.Out)
+	// embd.SetDirection(config.GPIOPinPump, embd.Out)
+	// embd.SetDirection(config.GPIOPinLight, embd.Out)
+	// embd.DigitalWrite(config.GPIOPinFan, embd.Low)
+	// embd.DigitalWrite(config.GPIOPinPump, embd.Low)
+	// embd.DigitalWrite(config.GPIOPinLight, embd.Low)
+
+
+	// Connect and initalise Raspberry Pi I2C
+	if err := embd.InitI2C(); err != nil {
+        log.Printf("ERROR: Unable to initalize the Raspberry Pi I2C. Ensure you have configured the PI I2C ports")
+    }
+    defer embd.CloseI2C()
+    
+    bus = embd.NewI2CBus(1)
+    defer bus.Close()
+	bus.WriteByteToReg(address, mode, regData)
+
 
 	// If we don't have the address of a heart rate monitor. Look for it.
 	if strings.Compare(config.HRMMacAddress, "0") == 0 {
