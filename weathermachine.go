@@ -21,7 +21,6 @@ package main
 
 import (
 	"github.com/akualab/dmx"
-	"github.com/kidoman/embd"
 	_ "github.com/kidoman/embd/host/all"
 	"log"
 	"time"
@@ -197,7 +196,7 @@ func enablePump(c Configuration, d chan bool, relayCtrl *RelayControl) {
 			ticker = time.NewTicker(time.Millisecond * time.Duration(c.PumpInterval)).C
 
 		case <-ticker:
-			pulsePump(c, bus)
+			pulsePump(c, relayCtrl)
 
 		case <-d:
 			return

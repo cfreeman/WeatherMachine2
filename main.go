@@ -84,14 +84,16 @@ func main() {
 	// Connect and initalise Raspberry Pi I2C
 	err = embd.InitI2C(); 
 	if err != nil {
-        log.Printf("ERROR: Unable to initalize the Raspberry Pi I2C. Ensure you have configured the PI I2C ports")
-    }
-    defer embd.CloseI2C()
-    bus := embd.NewI2CBus(1)
+            log.Printf("ERROR: Unable to initalize the Raspberry Pi I2C. Ensure you have configured the PI I2C ports")
+        }
+        defer embd.CloseI2C()
+        bus := embd.NewI2CBus(1)
 
 	// Create relay controller
-    relayCtrl := NewRelayCtrl(bus)
+        relayCtrl := NewRelayCtrl(bus)
 
+        // Reset relay
+        relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 
 	// If we don't have the address of a heart rate monitor. Look for it.
 	if strings.Compare(config.HRMMacAddress, "0") == 0 {
