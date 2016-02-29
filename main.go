@@ -38,15 +38,13 @@ type HRMsg struct {
 	Contact   bool // Does the polar H7 currently have skin contact?
 }
 
-
-// I2C 
+// I2C
 type RelayControl struct {
-  bus           embd.I2CBus
-  address       byte
-  mode          byte
-  regData       byte
+	bus     embd.I2CBus
+	address byte
+	mode    byte
+	regData byte
 }
-
 
 func main() {
 	f, err := os.OpenFile("WeatherMachine2.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -80,20 +78,19 @@ func main() {
 	// embd.DigitalWrite(config.GPIOPinPump, embd.Low)
 	// embd.DigitalWrite(config.GPIOPinLight, embd.Low)
 
-
 	// Connect and initalise Raspberry Pi I2C
-	err = embd.InitI2C(); 
+	err = embd.InitI2C()
 	if err != nil {
-            log.Printf("ERROR: Unable to initalize the Raspberry Pi I2C. Ensure you have configured the PI I2C ports")
-        }
-        defer embd.CloseI2C()
-        bus := embd.NewI2CBus(1)
+		log.Printf("ERROR: Unable to initalize the Raspberry Pi I2C. Ensure you have configured the PI I2C ports")
+	}
+	defer embd.CloseI2C()
+	bus := embd.NewI2CBus(1)
 
 	// Create relay controller
-        relayCtrl := NewRelayCtrl(bus)
+	relayCtrl := NewRelayCtrl(bus)
 
-        // Reset relay
-        relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
+	// Reset relay
+	relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 
 	// If we don't have the address of a heart rate monitor. Look for it.
 	if strings.Compare(config.HRMMacAddress, "0") == 0 {
@@ -134,11 +131,9 @@ func main() {
 	}
 }
 
-
 func NewRelayCtrl(bus embd.I2CBus) *RelayControl {
-  return &RelayControl{ bus: bus, address: 0x20, mode: 0x06, regData: 0xff }
+	return &RelayControl{bus: bus, address: 0x20, mode: 0x06, regData: 0xff}
 }
-
 
 func updateConfiguration(c chan Configuration, configFile string) {
 	ticker := time.NewTicker(time.Second * 30).C

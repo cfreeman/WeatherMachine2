@@ -28,13 +28,12 @@ import (
 
 // WeatherMachine holds connections to everything we need to manipulate the installation.
 type WeatherMachine struct {
-	stop    chan bool     // Channel for stopping the control elements of the installation.
-	dmx     *dmx.DMX      // The DMX connection for writting messages to the Smoke machine and lights.
-	config  Configuration // The configuration element for the installation.
-	lastRun time.Time     // The last time the installation was run.
-	relayCtrl *RelayControl  // THe I2C bus
+	stop      chan bool     // Channel for stopping the control elements of the installation.
+	dmx       *dmx.DMX      // The DMX connection for writting messages to the Smoke machine and lights.
+	config    Configuration // The configuration element for the installation.
+	lastRun   time.Time     // The last time the installation was run.
+	relayCtrl *RelayControl // THe I2C bus
 }
-
 
 // ****************************************************************************
 // ****************************************************************************
@@ -63,7 +62,7 @@ func warmup(state *WeatherMachine, msg HRMsg) stateFn {
 	if msg.Contact && msg.HeartRate > 0 {
 		// Wait for the fog to clear from the last run before running again.
 		log.Printf("INFO: Waiting for fog to clear")
-		d := (int64(state.config.FanDuration)*1000000) - time.Since(state.lastRun).Nanoseconds()
+		d := (int64(state.config.FanDuration) * 1000000) - time.Since(state.lastRun).Nanoseconds()
 		time.Sleep(time.Nanosecond * time.Duration(d))
 
 		log.Printf("INFO: entering running")
@@ -171,16 +170,16 @@ func pulsePump(c Configuration, relayCtrl *RelayControl) {
 	log.Printf("INFO: Pump on")
 	// embd.DigitalWrite(c.GPIOPinPump, embd.High)
 
-	relayCtrl.regData &= ^(byte(0x1)<<0)
-    relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
+	relayCtrl.regData &= ^(byte(0x1) << 0)
+	relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 
 	time.Sleep(time.Millisecond * time.Duration(c.PumpDuration))
 
 	log.Printf("INFO: Pump Off")
 	// embd.DigitalWrite(c.GPIOPinPump, embd.Low)
 
-	relayCtrl.regData |= (byte(0x1)<<0)
-    relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
+	relayCtrl.regData |= (byte(0x1) << 0)
+	relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 }
 
 // enablePump switches the relay on for the water pump after DeltaTPump milliseconds have expired
@@ -214,8 +213,8 @@ func enableFan(c Configuration, d chan bool, relayCtrl *RelayControl) {
 		case <-dt:
 			log.Printf("INFO: Fan On")
 			// embd.DigitalWrite(c.GPIOPinFan, embd.High)
-			relayCtrl.regData &= ^(byte(0x1)<<1)
-    		relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
+			relayCtrl.regData &= ^(byte(0x1) << 1)
+			relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 
 		case <-d:
 			// Wait for the fan duration to clear the smoke chamber.
@@ -223,8 +222,8 @@ func enableFan(c Configuration, d chan bool, relayCtrl *RelayControl) {
 			<-ft
 			log.Printf("INFO: Fan Off")
 			// embd.DigitalWrite(c.GPIOPinFan, embd.Low)
-			relayCtrl.regData |= (byte(0x1)<<1)
-    		relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
+			relayCtrl.regData |= (byte(0x1) << 1)
+			relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 			return
 		}
 	}
