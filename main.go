@@ -64,20 +64,6 @@ func main() {
 		log.Printf("INFO: Unable to open '%s', using default values", configFile)
 	}
 
-	// Connect and initalise our Raspberry Pi GPIO pins.
-	// err = embd.InitGPIO()
-	// if err != nil {
-	// 	log.Printf("ERROR: Unable to initalize the raspberry pi GPIO ports.")
-	// }
-	// defer embd.CloseGPIO()
-
-	// embd.SetDirection(config.GPIOPinFan, embd.Out)
-	// embd.SetDirection(config.GPIOPinPump, embd.Out)
-	// embd.SetDirection(config.GPIOPinLight, embd.Out)
-	// embd.DigitalWrite(config.GPIOPinFan, embd.Low)
-	// embd.DigitalWrite(config.GPIOPinPump, embd.Low)
-	// embd.DigitalWrite(config.GPIOPinLight, embd.Low)
-
 	// Connect and initalise Raspberry Pi I2C
 	err = embd.InitI2C()
 	if err != nil {

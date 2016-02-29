@@ -110,7 +110,8 @@ func running(state *WeatherMachine, msg HRMsg) stateFn {
 // enableLight turns on the light via the supplied DMX connection 'dmx' with the supplied colour 'l'.
 func enableLight(l LightColour, c Configuration, dmx *dmx.DMX) {
 	log.Printf("INFO: Light on")
-	// embd.DigitalWrite(c.GPIOPinLight, embd.High)
+	// TODO: i2c relay for light.
+
 	dmx.SetChannel(4, byte(l.Red))
 	dmx.SetChannel(5, byte(l.Green))
 	dmx.SetChannel(6, byte(l.Blue))
@@ -122,7 +123,8 @@ func enableLight(l LightColour, c Configuration, dmx *dmx.DMX) {
 // disableLight turns off the light via the supplied DMX connection 'dmx'.
 func disableLight(c Configuration, dmx *dmx.DMX) {
 	log.Printf("INFO: Light off")
-	// embd.DigitalWrite(c.GPIOPinLight, embd.Low)
+	// TODO: i2c relay for light.
+
 	dmx.SetChannel(4, 0)
 	dmx.SetChannel(5, 0)
 	dmx.SetChannel(6, 0)
@@ -168,16 +170,12 @@ func enableLightPulse(c Configuration, hr int, d chan bool, dmx *dmx.DMX) {
 // pulsePump runs the pump for the duration specified in the configuration.
 func pulsePump(c Configuration, relayCtrl *RelayControl) {
 	log.Printf("INFO: Pump on")
-	// embd.DigitalWrite(c.GPIOPinPump, embd.High)
-
 	relayCtrl.regData &= ^(byte(0x1) << 0)
 	relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 
 	time.Sleep(time.Millisecond * time.Duration(c.PumpDuration))
 
 	log.Printf("INFO: Pump Off")
-	// embd.DigitalWrite(c.GPIOPinPump, embd.Low)
-
 	relayCtrl.regData |= (byte(0x1) << 0)
 	relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 }
@@ -212,7 +210,6 @@ func enableFan(c Configuration, d chan bool, relayCtrl *RelayControl) {
 		select {
 		case <-dt:
 			log.Printf("INFO: Fan On")
-			// embd.DigitalWrite(c.GPIOPinFan, embd.High)
 			relayCtrl.regData &= ^(byte(0x1) << 1)
 			relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 
@@ -221,7 +218,6 @@ func enableFan(c Configuration, d chan bool, relayCtrl *RelayControl) {
 			ft := time.NewTimer(time.Millisecond * time.Duration(c.FanDuration)).C
 			<-ft
 			log.Printf("INFO: Fan Off")
-			// embd.DigitalWrite(c.GPIOPinFan, embd.Low)
 			relayCtrl.regData |= (byte(0x1) << 1)
 			relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 			return
