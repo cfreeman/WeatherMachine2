@@ -39,9 +39,9 @@ type Configuration struct {
 	DeltaTFan     int         // The number of milliseconds to wait before engaging the fan.
 	DeltaTPump    int         // The number of milliseconds to wait before and engaging the rain pump.
 	HRMMacAddress string      // The bluetooth peripheral ID for the heart rate monitor.
-	GPIOPinFan    int         // The GPIO pin id to use for controlling the fan.
-	GPIOPinPump   int         // The GPIO pin id to use for controlling the pump.
-	GPIOPinLight  int         // The GPIO pin id to use for controlling the light.
+	I2CPinFan     uint8       // The GPIO pin id to use for controlling the fan.
+	I2CPinPump    uint8       // The GPIO pin id to use for controlling the pump.
+	I2CPinLight   uint8       // The GPIO pin id to use for controlling the light.
 	SmokeAddress  string      // The serial address of the DMX controller for the smoke machine.
 	SmokeDuration int         // The number of milliseconds to activate the smoke machine.
 	FanDuration   int         // The number of milliseconds to leave the fan running.
@@ -59,7 +59,7 @@ type Configuration struct {
 // loadConfiguration reads a JSON file from the location specified at configFile and creates a configuration
 // struct from the contents. On error a default configuration object is returned.
 func loadConfiguration(configFile string) (c Configuration, err error) {
-	c = Configuration{63, 10, 20, 30, "0", 16, 20, 19, "/dev/ttyUSB0", 500, 500, 0.9, LightColour{200, 10, 10, 50, 155}, 500, LightColour{200, 10, 10, 50, 50}, 50, 50, 1000, 500, 1000} // Create default configuration.
+	c = Configuration{63, 10, 20, 30, "0", 1, 0, 2, "/dev/ttyUSB0", 500, 500, 0.9, LightColour{200, 10, 10, 50, 155}, 500, LightColour{200, 10, 10, 50, 50}, 50, 50, 1000, 500, 1000} // Create default configuration.
 
 	file, err := os.Open(configFile)
 	if err != nil {

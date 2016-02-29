@@ -170,13 +170,13 @@ func enableLightPulse(c Configuration, hr int, d chan bool, dmx *dmx.DMX) {
 // pulsePump runs the pump for the duration specified in the configuration.
 func pulsePump(c Configuration, relayCtrl *RelayControl) {
 	log.Printf("INFO: Pump on")
-	relayCtrl.regData &= ^(byte(0x1) << 0)
+	relayCtrl.regData &= ^(byte(0x1) << c.I2CPinPump)
 	relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 
 	time.Sleep(time.Millisecond * time.Duration(c.PumpDuration))
 
 	log.Printf("INFO: Pump Off")
-	relayCtrl.regData |= (byte(0x1) << 0)
+	relayCtrl.regData |= (byte(0x1) << c.I2CPinPump)
 	relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 }
 
@@ -210,7 +210,7 @@ func enableFan(c Configuration, d chan bool, relayCtrl *RelayControl) {
 		select {
 		case <-dt:
 			log.Printf("INFO: Fan On")
-			relayCtrl.regData &= ^(byte(0x1) << 1)
+			relayCtrl.regData &= ^(byte(0x1) << c.I2CPinFan)
 			relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 
 		case <-d:
@@ -218,7 +218,7 @@ func enableFan(c Configuration, d chan bool, relayCtrl *RelayControl) {
 			ft := time.NewTimer(time.Millisecond * time.Duration(c.FanDuration)).C
 			<-ft
 			log.Printf("INFO: Fan Off")
-			relayCtrl.regData |= (byte(0x1) << 1)
+			relayCtrl.regData |= (byte(0x1) << c.I2CPinFan)
 			relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 			return
 		}
