@@ -32,7 +32,7 @@ type WeatherMachine struct {
 	dmx       *dmx.DMX      // The DMX connection for writting messages to the Smoke machine and lights.
 	config    Configuration // The configuration element for the installation.
 	lastRun   time.Time     // The last time the installation was run.
-	relayCtrl *RelayControl // THe I2C bus
+	//relayCtrl *RelayControl // THe I2C bus
 }
 
 // ****************************************************************************
@@ -49,7 +49,7 @@ func idle(state *WeatherMachine, msg HRMsg) (sF stateFn) {
 	if msg.Contact {
 		log.Printf("INFO: entering warmup")
 		enableLight(state.config.S1Beat, state.config, state.dmx)
-		go enablePump(state.config, state.stop, state.relayCtrl)
+		go enablePump(state.config, state.stop/*, state.relayCtrl*/)
 
 		return warmup // skin contact has been made, enable light and enter warmup.
 	}
@@ -68,7 +68,7 @@ func warmup(state *WeatherMachine, msg HRMsg) stateFn {
 		log.Printf("INFO: entering running")
 		go enableLightPulse(state.config, msg.HeartRate, state.stop, state.dmx)
 		go enableSmoke(state.config, state.stop, state.dmx)
-		go enableFan(state.config, state.stop, state.relayCtrl)
+		go enableFan(state.config, state.stop/*, state.relayCtrl*/)
 
 		return running // skin contact and heart rate recieved, start the installation.
 	} else if !msg.Contact {
@@ -110,7 +110,6 @@ func running(state *WeatherMachine, msg HRMsg) stateFn {
 // enableLight turns on the light via the supplied DMX connection 'dmx' with the supplied colour 'l'.
 func enableLight(l LightColour, c Configuration, dmx *dmx.DMX) {
 	log.Printf("INFO: Light on")
-	// TODO: i2c relay for light.
 
 	dmx.SetChannel(4, byte(l.Red))
 	dmx.SetChannel(5, byte(l.Green))
@@ -123,7 +122,6 @@ func enableLight(l LightColour, c Configuration, dmx *dmx.DMX) {
 // disableLight turns off the light via the supplied DMX connection 'dmx'.
 func disableLight(c Configuration, dmx *dmx.DMX) {
 	log.Printf("INFO: Light off")
-	// TODO: i2c relay for light.
 
 	dmx.SetChannel(4, 0)
 	dmx.SetChannel(5, 0)
@@ -168,32 +166,32 @@ func enableLightPulse(c Configuration, hr int, d chan bool, dmx *dmx.DMX) {
 }
 
 // pulsePump runs the pump for the duration specified in the configuration.
-func pulsePump(c Configuration, relayCtrl *RelayControl) {
+func pulsePump(c Configuration /*, relayCtrl *RelayControl*/) {
 	log.Printf("INFO: Pump on")
-	relayCtrl.regData &= ^(byte(0x1) << c.I2CPinPump)
-	relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
+	//relayCtrl.regData &= ^(byte(0x1) << c.I2CPinPump)
+	//relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 
 	time.Sleep(time.Millisecond * time.Duration(c.PumpDuration))
 
 	log.Printf("INFO: Pump Off")
-	relayCtrl.regData |= (byte(0x1) << c.I2CPinPump)
-	relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
+	//relayCtrl.regData |= (byte(0x1) << c.I2CPinPump)
+	//relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 }
 
 // enablePump switches the relay on for the water pump after DeltaTPump milliseconds have expired
 // in the configuration. Pump remains on till being notified to stop on d.
-func enablePump(c Configuration, d chan bool, relayCtrl *RelayControl) {
+func enablePump(c Configuration, d chan bool/*, relayCtrl *RelayControl*/) {
 	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTPump)).C
 	var ticker <-chan time.Time
 
 	for {
 		select {
 		case <-dt:
-			pulsePump(c, relayCtrl)
+			pulsePump(c /*, relayCtrl*/)
 			ticker = time.NewTicker(time.Millisecond * time.Duration(c.PumpInterval)).C
 
 		case <-ticker:
-			pulsePump(c, relayCtrl)
+			pulsePump(c /*, relayCtrl*/)
 
 		case <-d:
 			return
@@ -203,23 +201,23 @@ func enablePump(c Configuration, d chan bool, relayCtrl *RelayControl) {
 
 // enableFan switches the relay on for the fan after DeltaTFan milliseconds have expired
 // in the configuration. Fan remains on till being notified to stop on d.
-func enableFan(c Configuration, d chan bool, relayCtrl *RelayControl) {
+func enableFan(c Configuration, d chan bool /*, relayCtrl *RelayControl*/) {
 	dt := time.NewTimer(time.Millisecond * time.Duration(c.DeltaTFan)).C
 
 	for {
 		select {
 		case <-dt:
 			log.Printf("INFO: Fan On")
-			relayCtrl.regData &= ^(byte(0x1) << c.I2CPinFan)
-			relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
+			//relayCtrl.regData &= ^(byte(0x1) << c.I2CPinFan)
+			//relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 
 		case <-d:
 			// Wait for the fan duration to clear the smoke chamber.
 			ft := time.NewTimer(time.Millisecond * time.Duration(c.FanDuration)).C
 			<-ft
 			log.Printf("INFO: Fan Off")
-			relayCtrl.regData |= (byte(0x1) << c.I2CPinFan)
-			relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
+			//relayCtrl.regData |= (byte(0x1) << c.I2CPinFan)
+			//relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 			return
 		}
 	}
