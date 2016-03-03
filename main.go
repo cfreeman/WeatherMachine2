@@ -65,18 +65,18 @@ func main() {
 	}
 
 	// Connect and initalise Raspberry Pi I2C
-	// err = embd.InitI2C()
-	// if err != nil {
-	// 	log.Printf("ERROR: Unable to initalize the Raspberry Pi I2C. Ensure you have configured the PI I2C ports")
-	// }
-	// defer embd.CloseI2C()
-	// bus := embd.NewI2CBus(1)
+	err = embd.InitI2C()
+	if err != nil {
+		log.Printf("ERROR: Unable to initalize the Raspberry Pi I2C. Ensure you have configured the PI I2C ports")
+	}
+	defer embd.CloseI2C()
+	bus := embd.NewI2CBus(1)
 
-	// // Create relay controller
-	// relayCtrl := NewRelayCtrl(bus)
+	// Create relay controller
+	relayCtrl := NewRelayCtrl(bus)
 
 	// Reset relay
-	//relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
+	relayCtrl.bus.WriteByteToReg(relayCtrl.address, relayCtrl.mode, relayCtrl.regData)
 
 	// If we don't have the address of a heart rate monitor. Look for it.
 	if strings.Compare(config.HRMMacAddress, "0") == 0 {
@@ -96,7 +96,7 @@ func main() {
 
 	conf := make(chan Configuration)
 	hrMsg := make(chan HRMsg) // Channel for receiving heart rate messages from the PolarH7.
-	weatherMachine := WeatherMachine{make(chan bool), dmx, config, time.Now().Add(-time.Duration(config.FanDuration))/*, relayCtrl*/}
+	weatherMachine := WeatherMachine{make(chan bool), dmx, config, time.Now().Add(-time.Duration(config.FanDuration)), relayCtrl}
 	update := idle
 
 	go pollHeartRateMonitor(config.HRMMacAddress, hrMsg)
@@ -117,10 +117,9 @@ func main() {
 	}
 }
 
-/*
 func NewRelayCtrl(bus embd.I2CBus) *RelayControl {
 	return &RelayControl{bus: bus, address: 0x20, mode: 0x06, regData: 0xff}
-}*/
+}
 
 func updateConfiguration(c chan Configuration, configFile string) {
 	ticker := time.NewTicker(time.Second * 30).C
