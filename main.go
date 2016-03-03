@@ -103,7 +103,6 @@ func main() {
 	go updateConfiguration(conf, configFile)
 	for {
 		msg := <-hrMsg
-		log.Printf("INFO C: %t HR: %d", msg.Contact, msg.HeartRate)
 
 		select {
 		case c := <-conf:
